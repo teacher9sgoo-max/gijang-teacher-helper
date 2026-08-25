@@ -1148,6 +1148,7 @@ let currentAccountId = null;
 let currentRole = 'teacher';
 let serverSessionToken = '';
 let teacherAccounts = []; // [{id, password, name, role}], loaded from the Google Sheet
+let teacherAccountsLoadedFromSheet = false;
 
 function loadMemberRegistry(){
   try{ const stored=JSON.parse(localStorage.getItem(MEMBER_STORAGE_KEY)||'null'); if(Array.isArray(stored)&&stored.length) return stored; }catch(e){}
@@ -1159,6 +1160,7 @@ function loadMemberRegistry(){
 function saveMemberRegistry(){ return true; }
 function buildTeacherAccounts(rows){
   const parsed=[];
+  teacherAccountsLoadedFromSheet=false;
   if(Array.isArray(rows) && rows.length){
     const header=rows[0].map(v=>String(v||'').trim());
     const findCol=(...words)=>header.findIndex(h=>words.some(w=>h.includes(w)));
@@ -1172,7 +1174,8 @@ function buildTeacherAccounts(rows){
       if(id && password) parsed.push({id,password,name:name||id,role:id==='마스터'?'admin':'teacher'});
     });
   }
-  teacherAccounts=parsed.length ? parsed : loadMemberRegistry();
+  if(parsed.length){ teacherAccounts=parsed; teacherAccountsLoadedFromSheet=true; }
+  else teacherAccounts=loadMemberRegistry();
 }
 
 function initAuth(){
@@ -1232,7 +1235,7 @@ async function completeLogin(){
   // 서버 왕복은 계정 목록이 아직 없거나 일치하는 계정이 없을 때만 사용합니다.
   const quickAccount=Array.isArray(teacherAccounts)?teacherAccounts.find(a=>a.id===id && a.password===pw):null;
   if(quickAccount){ establishLogin_(quickAccount,pw); return; }
-  if(Array.isArray(teacherAccounts) && teacherAccounts.length){
+  if(teacherAccountsLoadedFromSheet){
     errEl.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
     return;
   }
@@ -1529,36 +1532,28 @@ function buildStudents(rows){
 async function loadAll(){
   showStatus('loading');
   let timetableRows=[];
-  try{
-    // 회원 명부도 다른 시트와 병렬로 읽어 로그인 대기 시간을 줄입니다.
-    const [calRows, noticeRows, studentRows, dutyRows, timetableRowsLoaded, accountRowsLoaded] = await Promise.all([
-      fetchSheetRows('학사일정'),
-      fetchSheetRows('담임교사 전달사항'),
-      fetchSheetRows('전체 명렬표'),
-      fetchSheetRows('급식당번'),
-      fetchSheetRows('시간표 캐시'),
-      fetchSheetRows('교사 아이디 비번'),
-    ]);
-    buildCalendar(calRows);
-    buildNotices(noticeRows);
-    buildStudents(studentRows);
-    buildDuty(dutyRows);
-    hideStatus();
-    document.getElementById('sync-label').textContent = '마지막 업데이트 ' + new Date().toLocaleTimeString('ko-KR');
-    renderCalendar();
-    renderNotices();
-    renderDuty();
-    timetableRows=timetableRowsLoaded;
-  }catch(e){
-    showStatus('error', e.message);
-    document.getElementById('sync-label').textContent = '동기화 실패';
-  }
-  try{
-    buildTeacherAccounts(accountRowsLoaded);
-  }catch(e){
-    console.error('교사 아이디 비번 시트 로드 실패:', e.message);
-    buildTeacherAccounts([]);
-  }
+  // 한 시트의 지연·실패가 회원 명부 로그인까지 막지 않도록 각각 독립 처리합니다.
+  const sheetResults=await Promise.allSettled([
+    fetchSheetRows('학사일정'),
+    fetchSheetRows('담임교사 전달사항'),
+    fetchSheetRows('전체 명렬표'),
+    fetchSheetRows('급식당번'),
+    fetchSheetRows('시간표 캐시'),
+    fetchSheetRows('교사 아이디 비번'),
+  ]);
+  const rowsAt=index=>sheetResults[index]?.status==='fulfilled'&&Array.isArray(sheetResults[index].value)?sheetResults[index].value:[];
+  const failedSheets=sheetResults.map((r,i)=>r.status==='rejected'?['학사일정','담임교사 전달사항','전체 명렬표','급식당번','시간표 캐시','교사 아이디 비번'][i]:'').filter(Boolean);
+  buildCalendar(rowsAt(0));
+  buildNotices(rowsAt(1));
+  buildStudents(rowsAt(2));
+  buildDuty(rowsAt(3));
+  timetableRows=rowsAt(4);
+  buildTeacherAccounts(rowsAt(5));
+  hideStatus();
+  document.getElementById('sync-label').textContent = failedSheets.length ? `일부 자료 지연 · ${failedSheets.join(', ')}` : '마지막 업데이트 ' + new Date().toLocaleTimeString('ko-KR');
+  renderCalendar();
+  renderNotices();
+  renderDuty();
   buildTeacherTimetable(timetableRows);
   populateTeacherSelect();
   initAuth();
