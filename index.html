@@ -1228,6 +1228,14 @@ async function completeLogin(){
   const id = document.getElementById('login-id-input').value.trim();
   const pw = document.getElementById('login-pw-input').value;
   if(!id || !pw){ errEl.textContent = '아이디와 비밀번호를 모두 입력해주세요.'; return; }
+  // 페이지 로딩 때 이미 구글 시트에서 메모리에 읽은 계정은 즉시 확인합니다.
+  // 서버 왕복은 계정 목록이 아직 없거나 일치하는 계정이 없을 때만 사용합니다.
+  const quickAccount=Array.isArray(teacherAccounts)?teacherAccounts.find(a=>a.id===id && a.password===pw):null;
+  if(quickAccount){ establishLogin_(quickAccount,pw); return; }
+  if(Array.isArray(teacherAccounts) && teacherAccounts.length){
+    errEl.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+    return;
+  }
   if(getTimetableServerUrl()){
     errEl.textContent='회원 명부에서 로그인 정보를 확인하는 중입니다.';
     try{
@@ -1275,12 +1283,9 @@ function establishLogin_(account,pw){
   hideLoginModal();
   renderProgressLog();
   renderActivityLog();
-  if(serverSessionToken || Object.keys(teacherTimetable||{}).length){
-    window.setTimeout(()=>{
-      const timetableTab=document.querySelector('nav.tabs button[data-tab="teacher-timetable"]');
-      if(timetableTab) timetableTab.click();
-    },80);
-  }
+  // 로그인 직후에는 시간표가 아니라 대시보드를 먼저 보여줍니다.
+  const dashboardTab=document.querySelector('nav.tabs button[data-tab="dashboard"]');
+  if(dashboardTab) dashboardTab.click();
 }
 document.getElementById('login-submit-btn').addEventListener('click', completeLogin);
 document.getElementById('login-id-input').addEventListener('keydown', (e)=>{ if(e.key==='Enter') document.getElementById('login-pw-input').focus(); });
@@ -1525,12 +1530,14 @@ async function loadAll(){
   showStatus('loading');
   let timetableRows=[];
   try{
-    const [calRows, noticeRows, studentRows, dutyRows, timetableRowsLoaded] = await Promise.all([
+    // 회원 명부도 다른 시트와 병렬로 읽어 로그인 대기 시간을 줄입니다.
+    const [calRows, noticeRows, studentRows, dutyRows, timetableRowsLoaded, accountRowsLoaded] = await Promise.all([
       fetchSheetRows('학사일정'),
       fetchSheetRows('담임교사 전달사항'),
       fetchSheetRows('전체 명렬표'),
       fetchSheetRows('급식당번'),
       fetchSheetRows('시간표 캐시'),
+      fetchSheetRows('교사 아이디 비번'),
     ]);
     buildCalendar(calRows);
     buildNotices(noticeRows);
@@ -1546,10 +1553,8 @@ async function loadAll(){
     showStatus('error', e.message);
     document.getElementById('sync-label').textContent = '동기화 실패';
   }
-  // 계정 시트는 별도로 불러와서, 이 탭 이름/구성에 문제가 있어도 나머지 대시보드는 정상 동작하게 합니다.
   try{
-    const accountRows = await fetchSheetRows('교사 아이디 비번');
-    buildTeacherAccounts(accountRows);
+    buildTeacherAccounts(accountRowsLoaded);
   }catch(e){
     console.error('교사 아이디 비번 시트 로드 실패:', e.message);
     buildTeacherAccounts([]);
