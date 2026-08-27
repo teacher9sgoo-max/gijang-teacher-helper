@@ -60,3 +60,29 @@ GitHub Pages를 사용하지 않는다면 Netlify, Cloudflare Pages 등 정적 H
 | 자동 시작 파일이 실행되지 않음 | `.url` 파일이 `shell:startup` 폴더 안에 있는지 확인 |
 | 다른 교사가 로그인하지 못함 | ‘교사 아이디 비번’ 시트의 아이디·비밀번호 확인 |
 
+
+## Windows EXE 설치파일 만들기
+
+이번 패키지에는 Windows용 Electron 설치파일을 자동으로 만드는 `package.json`, `electron-main.cjs`, `preload.cjs`, `.github/workflows/build-windows.yml`이 포함되어 있습니다. GitHub 저장소 최상위에 이 파일들도 업로드해야 합니다.
+
+1. 저장소의 `Actions` 탭을 엽니다.
+2. 왼쪽에서 `Build Windows installer`를 선택합니다.
+3. `Run workflow`를 누르고 다시 초록색 `Run workflow` 버튼을 누릅니다.
+4. 빌드가 끝나면 해당 실행 기록을 클릭합니다.
+5. 아래쪽 `Artifacts`에서 `gijang-teacher-helper-windows`를 다운로드합니다.
+6. 압축을 풀면 Windows 설치파일과 포터블 실행파일이 들어 있습니다.
+7. 설치파일을 다른 교사에게 보내면 일반 Windows 프로그램처럼 설치할 수 있습니다.
+
+설치파일은 교사 컴퓨터에서 웹주소를 따로 입력하지 않아도 `index.html`을 앱 창으로 열고, Windows 자동 시작 설정을 사용할 수 있도록 구성됩니다. 다만 앱 안의 구글 시트·시간표 연결은 배포된 `dashboard-config.js`와 기존 Apps Script 주소를 사용하므로, 최신 파일을 저장소에 올린 뒤 빌드해야 합니다.
+
+Windows에서 ‘알 수 없는 앱’ 경고가 나타날 수 있습니다. 이는 개인적으로 빌드한 설치파일에 Microsoft 코드 서명이 없기 때문입니다. 파일을 본인이 만든 것이 맞는지 확인한 뒤 `추가 정보 → 실행`으로 진행할 수 있습니다. 학교 컴퓨터 정책에서 실행이 차단되면 학교 전산 관리자에게 허용을 요청해야 합니다.
+
+## EXE 앱 안에서 자동 시작 켜기·끄기
+
+웹사이트의 `Windows EXE 설치파일` 또는 `자동 시작 설정` 버튼은 GitHub Releases의 최신 설치파일 페이지를 엽니다. EXE를 설치한 뒤 앱 로그인 화면에서 `컴퓨터 시작 시 자동 실행`을 선택하면 Windows 로그인 시 앱이 자동으로 실행됩니다.
+
+앱을 실행한 뒤 상단의 `자동 시작 설정`을 누르면 `자동 시작 켜기`와 `자동 시작 끄기` 버튼을 사용할 수 있습니다. 이 두 버튼은 Windows 시작프로그램 등록 상태를 직접 변경하며, 웹 브라우저로 접속했을 때는 안전상 작동하지 않고 EXE 설치가 필요하다는 안내를 표시합니다.
+
+## EXE를 Releases에 올리기
+
+저장소에 `.github/workflows/build-windows.yml`까지 업로드한 뒤 `Actions → Build Windows installer → Run workflow`로 빌드할 수 있습니다. 웹 버튼에서 바로 설치파일을 받게 하려면 `v1.0.0` 같은 태그를 만들어 Push해야 합니다. 그러면 Windows 설치파일이 GitHub Release에 자동 첨부되고, 웹의 `Windows EXE 설치파일 받기` 버튼은 최신 Release 페이지를 엽니다.

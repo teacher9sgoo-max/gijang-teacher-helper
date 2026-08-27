@@ -461,6 +461,11 @@ textarea{resize:vertical; min-height:64px;}
 .progress-entry .pe-content{font-size:14px; line-height:1.55; white-space:pre-wrap;}
 .progress-entry .pe-memo{font-size:12.5px; color:var(--text-faint); font-style:italic;}
 .progress-note{font-size:12px; color:var(--text-faint); background:var(--bg); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:16px; line-height:1.5;}
+.activity-student-group{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:12px;margin-bottom:12px;}
+.activity-student-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 2px 9px;border-bottom:1px solid var(--border);color:var(--text);}
+.activity-student-heading span{font:600 11px 'JetBrains Mono';color:var(--text-faint);}
+.activity-student-group .progress-log{margin-top:9px;gap:7px;}
+.activity-student-group .result-empty{padding:8px 0;text-align:left;font-size:12px;}
 
 /* ---------- Inline quick-add forms (dashboard: 학사일정/전달사항/급식당번) ---------- */
 .quickadd-toggle{
@@ -545,7 +550,7 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
     <div class="top-actions">
       <span class="sync-badge" id="current-user-badge"></span>
       <span class="sync-badge" id="sync-label">불러오는 중...</span>
-      <button class="btn top-install-btn" id="pwa-install-btn" type="button" hidden>＋ 앱 설치</button>
+      <button class="btn top-install-btn" id="pwa-install-btn" type="button">▣ Windows EXE 설치파일</button>
       <button class="btn top-share-btn" id="pwa-share-btn" type="button">↗ 링크 공유</button>
       <button class="btn top-startup-btn" id="pwa-startup-btn" type="button">↗ 자동 시작 설정</button>
       <button class="btn" id="switch-user-btn">👤 사용자 전환</button>
@@ -564,6 +569,7 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
     <button data-tab="roster">명렬 보기</button>
     <button data-tab="activity">학생 활동 기록</button>
     <button data-tab="teacher-timetable">교사 시간표</button>
+    <button data-tab="timetable-cache" id="timetable-cache-tab-btn" style="display:none">시간표 캐시</button>
     <button data-tab="members" id="members-tab-btn" style="display:none">회원 명부 관리</button>
   </nav>
 
@@ -951,6 +957,7 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
         <div class="field">
           <label>학생</label>
           <select id="act-student-select"><option value="">반을 먼저 선택하세요</option></select>
+          <button class="btn" id="act-class-summary-btn" type="button" style="margin-top:8px;width:100%">▦ 반별 모아보기</button>
         </div>
         <div class="field">
           <label>날짜</label>
@@ -968,6 +975,7 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
           <button class="btn primary" id="act-add-btn" style="flex:1">기록 추가</button>
           <button class="btn" id="act-reset-btn">화면 초기화</button>
         </div>
+        <div class="quickadd-status" id="act-sync-status" aria-live="polite"></div>
         <div class="field" style="display:flex; gap:8px;">
           <button class="btn dark" id="act-print-btn" style="flex:1">🖨 인쇄 / PDF</button>
           <button class="btn dark" id="act-word-btn" style="flex:1">📄 Word 파일 저장 (.docx)</button>
@@ -1031,6 +1039,23 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
     <div id="tt-official-results" style="display:none"></div>
   </section>
 
+  <section class="tab" id="tab-timetable-cache">
+    <div class="section-title"><div><h2>시간표 캐시</h2><p>구글 스프레드시트에 저장된 최신 컴시간 시간표 캐시입니다. 탭을 열거나 새로고침을 누르면 시트 내용을 다시 읽습니다.</p></div></div>
+    <div class="card form-card" style="margin-bottom:18px">
+      <div class="field" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn primary" id="tt-cache-update-btn" type="button">↻ 시트에서 최신 시간표 수집</button>
+        <button class="btn" id="tt-cache-refresh-btn" type="button">⟳ 시간표 캐시 새로고침</button>
+        <a class="btn" id="tt-cache-sheet-link" href="#" target="_blank" rel="noopener">▣ 시간표 캐시 시트 열기</a>
+        <span class="quickadd-status" id="tt-cache-status">시간표 캐시를 불러오는 중입니다.</span>
+      </div>
+      <div class="progress-note">이 메뉴는 Apps Script가 이미 저장한 시간표 캐시를 다시 읽어 표시합니다. 컴시간 원본 수집과 30분 자동 갱신은 Apps Script의 <code>createTimetableTrigger()</code>가 담당합니다.</div>
+    </div>
+    <div class="card result-card">
+      <div id="tt-cache-summary" class="member-notice">시간표 캐시를 불러오는 중입니다.</div>
+      <div id="tt-cache-results" class="member-table-wrap" style="margin-top:14px"></div>
+    </div>
+  </section>
+
   <section class="tab" id="tab-members">
     <div class="section-title"><div><h2>회원 명부 관리</h2><p>구글 시트 ‘교사 아이디 비번’ 탭의 계정이 로그인에 사용됩니다.</p></div></div>
     <div class="member-notice"><b>안내:</b> 회원 명부는 구글 스프레드시트의 ‘교사 아이디 비번’ 시트에서 자동으로 읽습니다. 로그인 창에서 ‘이 기기에서 자동 로그인 유지’를 선택하면 현재 로그인 정보만 이 브라우저에 기억해 다음 접속 때 자동 로그인합니다.</div>
@@ -1078,10 +1103,10 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
 
   <div id="pwa-help-modal" class="pwa-help-modal" role="dialog" aria-modal="true" aria-labelledby="pwa-help-title">
     <div class="pwa-help-card">
-      <h3 id="pwa-help-title">Windows에서 자동 시작하기</h3>
-      <p>웹앱 설치는 브라우저의 설치 기능을 사용합니다. 컴퓨터를 켤 때 자동으로 열려면 아래 시작 아이콘을 다운로드해 한 번만 시작프로그램 폴더에 넣어 주세요.</p>
-      <ol><li>아래 <b>시작 아이콘 다운로드</b>를 누릅니다.</li><li><kbd>Win + R</kbd>을 누르고 <code>shell:startup</code>을 입력합니다.</li><li>다운로드한 시작 아이콘을 열린 폴더에 넣습니다.</li></ol>
-      <div class="pwa-help-actions"><button class="btn" id="pwa-startup-download-btn" type="button">시작 아이콘 다운로드</button><button class="btn" id="pwa-help-close-btn" type="button">닫기</button></div>
+      <h3 id="pwa-help-title">Windows EXE 설치파일</h3>
+      <p>Windows용 설치파일을 내려받아 설치하면 바탕화면·시작 메뉴에서 교무 도우미를 앱처럼 실행할 수 있습니다.</p>
+      <ol><li>아래 <b>Windows EXE 설치파일 받기</b>를 눌러 최신 설치파일을 받습니다.</li><li>설치 중 바탕화면·시작 메뉴 바로가기를 선택합니다.</li><li>앱 로그인 화면에서 <b>컴퓨터 시작 시 자동 실행</b>을 선택하거나, 로그인 후 자동 시작 설정을 변경합니다.</li></ol>
+      <div class="pwa-help-actions"><button class="btn primary" id="pwa-startup-download-btn" type="button">Windows EXE 설치파일 받기</button><button class="btn" id="pwa-autostart-on-btn" type="button">자동 시작 켜기</button><button class="btn" id="pwa-autostart-off-btn" type="button">자동 시작 끄기</button><button class="btn" id="pwa-help-close-btn" type="button">닫기</button></div>
     </div>
   </div>
   <script src="./dashboard-config.js"></script>
@@ -1144,6 +1169,7 @@ const MEMBER_STORAGE_KEY = 'gijang_member_registry_v1';
 const TIMETABLE_SERVER_URL_KEY = 'gijang_timetable_server_url_v1';
 const IS_EMBEDDED_LEGACY = new URLSearchParams(window.location.search).get('embedded') === '1';
 let currentUser = null;
+let currentLoginPassword = '';
 let currentAccountId = null;
 let currentRole = 'teacher';
 let serverSessionToken = '';
@@ -1225,7 +1251,20 @@ async function syncRemoteMemberList_(){
     renderMemberList();
   }catch(error){ if(list) list.innerHTML=`<div class="empty-note">회원 명부 동기화 실패: ${escapeHtml(error.message||'알 수 없는 오류')}</div>`; }
 }
-function refreshMemberAccess(){ const tab=document.getElementById('members-tab-btn'); if(tab)tab.style.display=currentRole==='admin'?'':'none'; if(currentRole==='admin'){if(getTimetableServerUrl()&&serverSessionToken)syncRemoteMemberList_();else renderMemberList();} }
+function refreshMemberAccess(){
+  const isAdmin=currentRole==='admin';
+  const memberTab=document.getElementById('members-tab-btn');
+  const cacheTab=document.getElementById('timetable-cache-tab-btn');
+  if(memberTab) memberTab.style.display=isAdmin?'':'none';
+  if(cacheTab) cacheTab.style.display=isAdmin?'':'none';
+  // 일반 교사가 이전 주소·상태에서 캐시 탭을 보고 있었다면 대시보드로 되돌립니다.
+  const cachePanel=document.getElementById('tab-timetable-cache');
+  if(!isAdmin && cachePanel && cachePanel.classList.contains('active')){
+    const dashboardTab=document.querySelector('nav.tabs button[data-tab="dashboard"]');
+    if(dashboardTab) dashboardTab.click();
+  }
+  if(isAdmin){if(getTimetableServerUrl()&&serverSessionToken)syncRemoteMemberList_();else renderMemberList();}
+}
 async function completeLogin(){
   const errEl = document.getElementById('login-error');
   const id = document.getElementById('login-id-input').value.trim();
@@ -1269,7 +1308,7 @@ async function completeLogin(){
 function establishLogin_(account,pw){
   const errEl = document.getElementById('login-error');
   const remember = document.getElementById('login-remember-check').checked;
-  currentAccountId=account.id; currentUser=account.name||account.id; currentRole=account.role||'teacher'; masterPasswordForWrite=currentRole==='admin'?pw:'';
+  currentAccountId=account.id; currentLoginPassword=String(pw||''); currentUser=account.name||account.id; currentRole=account.role||'teacher'; masterPasswordForWrite=currentRole==='admin'?pw:'';
   if(remember){
     try{ localStorage.setItem(USER_STORAGE_KEY,JSON.stringify({id:account.id,password:pw,name:currentUser,role:currentRole})); }catch(e){}
   } else {
@@ -1295,7 +1334,7 @@ document.getElementById('login-id-input').addEventListener('keydown', (e)=>{ if(
 document.getElementById('login-pw-input').addEventListener('keydown', (e)=>{ if(e.key==='Enter') completeLogin(); });
 document.getElementById('switch-user-btn').addEventListener('click', ()=>{
   try{ localStorage.removeItem(USER_STORAGE_KEY); }catch(e){}
-  currentUser=null; currentAccountId=null; currentRole='teacher'; masterPasswordForWrite='';
+  currentUser=null; currentLoginPassword=''; currentAccountId=null; currentRole='teacher'; masterPasswordForWrite='';
   updateUserBadge();
   refreshMemberAccess();
   document.getElementById('login-id-input').value = '';
@@ -1346,7 +1385,7 @@ function initMemberManagement(){
   });
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{ showStatus('loading'); initMemberManagement(); loadAll(); initProgressTab(); initActivityTab(); });
+document.addEventListener('DOMContentLoaded', ()=>{ showStatus('loading'); initMemberManagement(); loadAll(); initProgressTab(); initActivityTab(); window.setInterval(()=>{ if(!document.hidden) loadAll(); }, 30*60*1000); });
 
 let calendarEvents = {};
 let notices = [];
@@ -1445,7 +1484,7 @@ function fetchSheetRows(name){
         resolve(rows);
       }catch(e){ reject(e); }
     };
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(name)}&headers=1&tqx=out:json;responseHandler:${cbName}`;
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(name)}&headers=1&tqx=out:json;responseHandler:${cbName}&_=${Date.now()}`;
     script = document.createElement('script');
     script.src = url;
     script.onerror = ()=>{
@@ -1454,6 +1493,78 @@ function fetchSheetRows(name){
     };
     document.head.appendChild(script);
   });
+}
+
+function renderTimetableCacheTab(rows=latestTimetableCacheRows, message=''){
+  const status=document.getElementById('tt-cache-status');
+  const summary=document.getElementById('tt-cache-summary');
+  const results=document.getElementById('tt-cache-results');
+  const sheetLink=document.getElementById('tt-cache-sheet-link');
+  if(sheetLink) sheetLink.href=`${SHEET_EDIT_URL}#gid=321142347`;
+  if(!summary||!results) return;
+  const safeRows=Array.isArray(rows)?rows:[];
+  const data=safeRows.slice(1);
+  const header=safeRows[0]||[];
+  if(status){ status.className=data.length?'quickadd-status ok':'quickadd-status err'; status.textContent=message|| (data.length?`✅ ${data.length.toLocaleString('ko-KR')}개 시간표 행을 시트에서 다시 읽었습니다.`:'시간표 캐시가 비어 있습니다. Apps Script에서 createTimetableTrigger()를 실행하세요.'); }
+  if(!data.length){ summary.textContent='시간표 캐시가 비어 있습니다. Apps Script 동기화가 성공한 뒤 이 탭에서 새로고침하세요.'; results.innerHTML=''; return; }
+  const periodIndex=header.findIndex(h=>String(h||'').includes('기간'));
+  const teacherIndex=header.findIndex(h=>String(h||'').includes('교사'));
+  const periods=[...new Set(data.map(r=>String(r[periodIndex]||'').trim()).filter(Boolean))].sort();
+  const teachers=new Set(data.map(r=>String(r[teacherIndex]||'').trim()).filter(Boolean));
+  summary.innerHTML=`<b>시간표 캐시 정상 로드</b> · ${data.length.toLocaleString('ko-KR')}개 수업 행 · ${periods.length}개 기간 · ${teachers.size}명 교사<br><span class="mono">기간: ${escapeHtml(periods.join(', ')||'-')}</span>`;
+  const show=data.slice(0,300);
+  results.innerHTML=`<table class="member-table"><thead><tr>${header.map(h=>`<th>${escapeHtml(h||'')}</th>`).join('')}</tr></thead><tbody>${show.map(r=>`<tr>${header.map((_,i)=>`<td>${escapeHtml(r[i]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table>${data.length>show.length?`<div class="progress-note" style="margin-top:10px">화면에는 처음 ${show.length}행만 표시합니다. 전체 데이터는 ‘시간표 캐시 시트 열기’에서 확인하세요.</div>`:''}`;
+}
+
+async function updateTimetableCacheFromSheet(){
+  const status=document.getElementById('tt-cache-status');
+  const updateButton=document.getElementById('tt-cache-update-btn');
+  if(currentRole!=='admin'){
+    if(status){status.className='quickadd-status err';status.textContent='마스터 계정만 시간표 캐시를 갱신할 수 있습니다.';}
+    return;
+  }
+  const serverUrl=getTimetableServerUrl();
+  const adminPassword=getMasterPasswordForWrite();
+  if(!serverUrl){
+    if(status){status.className='quickadd-status err';status.textContent='Apps Script 웹앱 주소가 설정되지 않았습니다. 회원 명부 관리에서 /exec 주소를 저장하세요.';}
+    return;
+  }
+  if(!adminPassword) return;
+  if(updateButton){updateButton.disabled=true;updateButton.textContent='수집 중...';}
+  if(status){status.className='quickadd-status';status.textContent='컴시간 원본에서 시간표를 수집해 시트 캐시를 갱신하는 중입니다...';}
+  try{
+    const response=await fetch(serverUrl,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'syncTimetableCache',adminId:currentAccountId,adminPassword})
+    });
+    const result=await response.json();
+    if(!result||!result.success) throw new Error((result&&result.error)||'시간표 캐시 갱신에 실패했습니다.');
+    if(status){status.className='quickadd-status ok';status.textContent=`✅ 최신 시간표 수집 완료 · ${result.periods||0}개 기간 · ${(result.rows||0).toLocaleString('ko-KR')}개 수업 행`}
+    await refreshTimetableCacheTab();
+  }catch(error){
+    if(status){status.className='quickadd-status err';status.textContent=`시간표 캐시 갱신 실패: ${error.message||'네트워크 오류'}`;}
+  }finally{
+    if(updateButton){updateButton.disabled=false;updateButton.textContent='↻ 시트에서 최신 시간표 수집';}
+  }
+}
+
+async function refreshTimetableCacheTab(){
+  const status=document.getElementById('tt-cache-status');
+  if(currentRole!=='admin'){
+    if(status){status.className='quickadd-status err';status.textContent='시간표 캐시는 마스터 계정에서만 확인할 수 있습니다.';}
+    return;
+  }
+  if(status){status.className='quickadd-status';status.textContent='구글 시트의 시간표 캐시를 다시 읽는 중입니다...';}
+  try{
+    const rows=await fetchSheetRows('시간표 캐시');
+    latestTimetableCacheRows=rows;
+    buildTeacherTimetable(rows);
+    populateTeacherSelect();
+    renderTimetableCacheTab(rows);
+  }catch(error){
+    renderTimetableCacheTab([], `시간표 캐시를 읽지 못했습니다: ${error.message||'알 수 없는 오류'}`);
+  }
 }
 
 function buildCalendar(rows){
@@ -1548,6 +1659,7 @@ async function loadAll(){
   buildStudents(rowsAt(2));
   buildDuty(rowsAt(3));
   timetableRows=rowsAt(4);
+  latestTimetableCacheRows=timetableRows;
   buildTeacherAccounts(rowsAt(5));
   hideStatus();
   document.getElementById('sync-label').textContent = failedSheets.length ? `일부 자료 지연 · ${failedSheets.join(', ')}` : '마지막 업데이트 ' + new Date().toLocaleTimeString('ko-KR');
@@ -1565,6 +1677,7 @@ async function loadAll(){
     ttStatusEl.textContent=teacherCount?`✅ 시간표 캐시 ${periodCount}개 기간, 교사 ${teacherCount}명 불러옴`:'시간표 캐시에 자료가 없습니다. 컴시간 동기화 작업 후 새로고침해주세요.';
   }
   if(document.getElementById('tab-teacher-timetable').classList.contains('active')) openTeacherTimetableDefault();
+  if(document.getElementById('tab-timetable-cache').classList.contains('active')) renderTimetableCacheTab(latestTimetableCacheRows);
 }
 
 function showStatus(kind, msg){
@@ -1586,9 +1699,21 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     document.querySelectorAll('section.tab').forEach(s=>s.classList.remove('active'));
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab==='teacher-timetable') openTeacherTimetableDefault();
+    if(btn.dataset.tab==='timetable-cache'){
+      if(currentRole!=='admin'){
+        const dashboardTab=document.querySelector('nav.tabs button[data-tab="dashboard"]');
+        if(dashboardTab) dashboardTab.click();
+        return;
+      }
+      refreshTimetableCacheTab();
+    }
   });
 });
 document.getElementById('refresh-btn').addEventListener('click', loadAll);
+const timetableCacheRefreshBtn=document.getElementById('tt-cache-refresh-btn');
+if(timetableCacheRefreshBtn) timetableCacheRefreshBtn.addEventListener('click', refreshTimetableCacheTab);
+const timetableCacheUpdateBtn=document.getElementById('tt-cache-update-btn');
+if(timetableCacheUpdateBtn) timetableCacheUpdateBtn.addEventListener('click', updateTimetableCacheFromSheet);
 
 /* ---------------- quick-add forms (dashboard: write directly to the sheet) ---------------- */
 function wireQuickAddToggle(toggleId, formId, cancelId){
@@ -2598,6 +2723,7 @@ let teacherTimetable = {};   // 현재 기간의 교사별 시간표
 let classTimetable = {};     // 현재 기간의 학급별 시간표
 let timetablePeriods = {};   // { periodKey: {label, teacher, class} }
 let ttPeriodTimes = {};       // { 1: {start:'09:00', end:'09:45'} }
+let latestTimetableCacheRows = []; // 구글 시트에서 가장 최근 읽은 시간표 캐시 원본 행
 let ttSelectedPeriod = '';
 const TT_WEEKDAYS = ['월','화','수','목','금'];
 let ttMode = 'teacher'; // 'teacher' | 'class'
@@ -3090,8 +3216,29 @@ function saveActivityStore(store){
   try{ localStorage.setItem(actStoreKey(), JSON.stringify(store)); }catch(e){ /* storage unavailable */ }
 }
 function actKey(grade,cls,no){ return `${grade}|${cls}|${no}`; }
+async function syncActivityRecordToSheet_(record){
+  const status=document.getElementById('act-sync-status');
+  const url=String(window.GIJANG_ACTIVITY_WRITE_URL||getTimetableServerUrl()||'').trim();
+  if(!url){if(status){status.className='quickadd-status';status.textContent='이 기기에 저장했습니다. 시트 동기화 주소가 설정되지 않았습니다.';}return false;}
+  try{
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'activityAppend',record,loginId:currentAccountId||'',password:currentLoginPassword||'',token:window.GIJANG_ACTIVITY_WRITE_TOKEN||''})});
+    const data=await res.json();
+    if(!data||!data.success)throw new Error(data&&data.error||'시트 저장에 실패했습니다.');
+    if(status){status.className='quickadd-status ok';status.textContent='기기와 구글 시트에 저장했습니다.';}return true;
+  }catch(error){if(status){status.className='quickadd-status err';status.textContent=`기기에는 저장했지만 시트 저장 실패: ${error.message||'연결 오류'}`;}return false;}
+}
 
 let actGrade = null;
+let activityViewMode = 'student';
+function updateActivityViewButton(){
+  const btn=document.getElementById('act-class-summary-btn');
+  const studentSel=document.getElementById('act-student-select');
+  if(!btn)return;
+  const isClass=activityViewMode==='class';
+  btn.textContent=isClass?'▣ 학생별 보기':'▦ 반별 모아보기';
+  btn.classList.toggle('primary',isClass);
+  if(studentSel)studentSel.disabled=isClass;
+}
 function initActivityTab(){
   document.querySelectorAll('#act-grade-chips .chip').forEach(chip=>{
     chip.addEventListener('click', ()=>{
@@ -3105,12 +3252,18 @@ function initActivityTab(){
   });
   document.getElementById('act-class-select').addEventListener('change', ()=>{ fillActStudentSelect(); renderActivityLog(); });
   document.getElementById('act-student-select').addEventListener('change', renderActivityLog);
+  document.getElementById('act-class-summary-btn').addEventListener('click', ()=>{
+    activityViewMode=activityViewMode==='student'?'class':'student';
+    updateActivityViewButton();
+    renderActivityLog();
+  });
+  updateActivityViewButton();
 
   const dateInput = document.getElementById('act-date');
   const today = new Date();
   dateInput.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
-  document.getElementById('act-add-btn').addEventListener('click', ()=>{
+  document.getElementById('act-add-btn').addEventListener('click', async ()=>{
     const cls = document.getElementById('act-class-select').value;
     const studentNo = document.getElementById('act-student-select').value;
     const content = document.getElementById('act-content').value.trim();
@@ -3126,12 +3279,17 @@ function initActivityTab(){
       memo: document.getElementById('act-memo').value.trim(),
     });
     saveActivityStore(store);
+    const syncStatus=document.getElementById('act-sync-status');
+    if(syncStatus){syncStatus.className='quickadd-status';syncStatus.textContent='이 기기에 저장했습니다. 시트 동기화 준비 중...';}
+    await syncActivityRecordToSheet_({date:dateInput.value.trim(),grade:actGrade,cls,studentNo,content,memo:document.getElementById('act-memo').value.trim(),teacherId:currentAccountId||'',teacherName:currentUser||''});
     document.getElementById('act-content').value = '';
     document.getElementById('act-memo').value = '';
     renderActivityLog();
   });
   document.getElementById('act-reset-btn').addEventListener('click', ()=>{
     actGrade = null;
+    activityViewMode='student';
+    updateActivityViewButton();
     document.querySelectorAll('#act-grade-chips .chip').forEach(c=>c.classList.remove('active'));
     fillClassSelect(document.getElementById('act-class-select'), null);
     fillActStudentSelect();
@@ -3220,7 +3378,28 @@ function fillActStudentSelect(){
   });
 }
 
+function renderActivityClassLog(){
+  const resultsEl=document.getElementById('activity-results');
+  if(!actGrade){resultsEl.innerHTML='<div class="result-empty">학년과 반을 선택하면 반별 기록이 표시됩니다.</div>';return;}
+  const cls=document.getElementById('act-class-select').value;
+  if(!cls){resultsEl.innerHTML='<div class="result-empty">학년과 반을 선택하면 반별 기록이 표시됩니다.</div>';return;}
+  const store=loadActivityStore();
+  const pool=students.filter(s=>s.grade===actGrade&&s.cls===cls).sort((a,b)=>(parseInt(a.no,10)||0)-(parseInt(b.no,10)||0));
+  const cards=pool.map(student=>{
+    const key=actKey(actGrade,cls,student.no), entries=store[key]||[];
+    const body=entries.length?entries.map((e,i)=>`<div class="progress-entry" data-act-key="${escapeHtml(key)}" data-act-index="${i}"><div class="pe-top"><span class="pe-date">${escapeHtml(e.date||'')}</span><button class="pe-del" data-summary-key="${escapeHtml(key)}" data-summary-i="${i}" title="삭제">✕</button></div><div class="pe-content">${escapeHtml(e.content||'')}</div>${e.memo?`<div class="pe-memo">${escapeHtml(e.memo)}</div>`:''}</div>`).join(''):'<div class="result-empty">기록 없음</div>';
+    return `<div class="activity-student-group"><div class="activity-student-heading"><strong>${escapeHtml(student.no)}번 ${escapeHtml(student.name)}</strong><span>${entries.length}건</span></div><div class="progress-log">${body}</div></div>`;
+  }).join('');
+  resultsEl.innerHTML=cards||'<div class="result-empty">해당 반 학생이 없습니다.</div>';
+  resultsEl.querySelectorAll('[data-summary-i]').forEach(btn=>btn.addEventListener('click',()=>{
+    const key=btn.dataset.summaryKey, i=Number(btn.dataset.summaryI), next=loadActivityStore();
+    if(!next[key]||!confirm('이 기록을 정말 삭제할까요? 삭제하면 되돌릴 수 없어요.'))return;
+    next[key].splice(i,1);saveActivityStore(next);renderActivityLog();
+  }));
+}
+
 function renderActivityLog(){
+  if(activityViewMode==='class'){ renderActivityClassLog(); return; }
   const resultsEl = document.getElementById('activity-results');
   const cls = document.getElementById('act-class-select').value;
   const studentNo = document.getElementById('act-student-select').value;
@@ -3544,14 +3723,18 @@ function shuffle(arr){
 }
 /* ---------------- installable web app / Windows startup helper ---------------- */
 let deferredPwaInstallPrompt=null;
+function getWindowsInstallerUrl(){return String(window.GIJANG_WINDOWS_INSTALLER_URL||'https://github.com/teacher9sgoo-max/gijang-teacher-helper/releases/latest').trim();}
 function downloadWindowsStartupShortcut(){
-  const target=location.href.split('#')[0];
-  const content='[InternetShortcut]\\r\\nURL='+target+'\\r\\nIconFile='+target+'\\r\\nIconIndex=0\\r\\n';
-  const blob=new Blob([content],{type:'application/internet-shortcut'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='기장중학교-교무도우미-자동시작.url'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  const target=getWindowsInstallerUrl();
+  window.open(target,'_blank','noopener');
 }
 function openPwaHelp(){const m=document.getElementById('pwa-help-modal');if(m)m.classList.add('show');}
 function closePwaHelp(){const m=document.getElementById('pwa-help-modal');if(m)m.classList.remove('show');}
+async function setDesktopAutoStart_(enabled){
+  if(!window.electronAPI||typeof window.electronAPI.setAutoLaunch!=='function'){alert('자동 시작 제어는 Windows EXE 설치 앱에서만 사용할 수 있습니다. 먼저 EXE를 설치해 주세요.');return false;}
+  try{await window.electronAPI.setAutoLaunch(Boolean(enabled));alert(enabled?'Windows 시작 시 자동 실행을 켰습니다.':'Windows 시작 시 자동 실행을 껐습니다.');return true;}
+  catch(e){alert('자동 시작 설정을 변경하지 못했습니다.');return false;}
+}
 async function shareGijangApp(){
   const shareData={title:'기장중학교 교무 도우미',text:'기장중학교 교무 도우미에 접속하세요.',url:location.href};
   try{if(navigator.share){await navigator.share(shareData);return;}if(navigator.clipboard){await navigator.clipboard.writeText(location.href);alert('접속 링크를 클립보드에 복사했습니다.');return;}}
@@ -3563,10 +3746,12 @@ async function shareGijangApp(){
   const startupBtn=document.getElementById('pwa-startup-btn');
   const shareBtn=document.getElementById('pwa-share-btn');
   if(shareBtn)shareBtn.addEventListener('click',shareGijangApp);
-  if(installBtn)installBtn.addEventListener('click',async()=>{if(deferredPwaInstallPrompt){deferredPwaInstallPrompt.prompt();await deferredPwaInstallPrompt.userChoice;deferredPwaInstallPrompt=null;installBtn.hidden=true;}else openPwaHelp();});
+  if(installBtn)installBtn.addEventListener('click',()=>openPwaHelp());
   if(startupBtn)startupBtn.addEventListener('click',openPwaHelp);
   document.getElementById('pwa-help-close-btn')?.addEventListener('click',closePwaHelp);
   document.getElementById('pwa-startup-download-btn')?.addEventListener('click',downloadWindowsStartupShortcut);
+  document.getElementById('pwa-autostart-on-btn')?.addEventListener('click',()=>setDesktopAutoStart_(true));
+  document.getElementById('pwa-autostart-off-btn')?.addEventListener('click',()=>setDesktopAutoStart_(false));
   document.getElementById('pwa-help-modal')?.addEventListener('click',e=>{if(e.target.id==='pwa-help-modal')closePwaHelp();});
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPwaInstallPrompt=e;if(installBtn)installBtn.hidden=false;});
   window.addEventListener('appinstalled',()=>{if(installBtn)installBtn.hidden=true;});
