@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
-    "dist:win": "electron-builder --win nsis portable"
+    "dist:win": "electron-builder --win nsis portable --publish never"
   },
   "devDependencies": {
     "electron": "^35.0.0",
