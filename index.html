@@ -312,6 +312,13 @@ textarea{resize:vertical; min-height:64px;}
 .login-error{color:var(--danger); font-size:12.5px; min-height:16px; margin-bottom:6px;}
 .login-remember{justify-content:center; margin-bottom:18px;}
 
+#confirm-modal{display:none; position:fixed; inset:0; background:rgba(20,26,22,.75); z-index:120; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(6px);}
+#confirm-modal.show{display:flex;}
+.confirm-card{max-width:340px; width:100%; padding:26px 24px; text-align:center;}
+.confirm-card p{font-size:14.5px; line-height:1.6; margin:0 0 20px; white-space:pre-line;}
+.confirm-actions{display:flex; gap:10px; justify-content:center;}
+.confirm-actions .btn{flex:1;}
+
 #reveal-modal{display:none; position:fixed; inset:0; background:rgba(20,20,22,.7); z-index:80; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(6px);}
 #reveal-modal.show{display:flex;}
 .reveal-box{width:100%; max-width:380px; text-align:center;}
@@ -1115,7 +1122,7 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
     <p class="login-sub">교사 아이디와 비밀번호를 입력하세요. 마스터 계정은 회원 명부를 관리할 수 있습니다.</p>
     <input type="text" id="login-id-input" placeholder="아이디" maxlength="30" autocomplete="username">
     <div class="login-pw-wrap" style="position:relative">
-      <input type="password" id="login-pw-input" placeholder="비밀번호" maxlength="30" autocomplete="current-password" style="width:100%;box-sizing:border-box;padding-right:40px">
+      <input type="password" id="login-pw-input" placeholder="비밀번호" maxlength="30" autocomplete="current-password" style="width:100%;box-sizing:border-box;padding-left:40px;padding-right:40px">
       <button type="button" id="login-pw-toggle" aria-label="비밀번호 보이기" title="비밀번호 보이기" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;cursor:pointer;padding:6px;line-height:0;color:#6b786e">
         <svg id="login-pw-toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
       </button>
@@ -1124,6 +1131,16 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
     <label class="check-row login-remember"><input type="checkbox" id="login-remember-check" checked> 이 기기에서 자동 로그인 유지</label>
     <label class="check-row login-remember" id="login-autostart-row"><input type="checkbox" id="login-autostart-check" checked> 컴퓨터 켜질 때 자동으로 실행 (데스크톱 앱에서만 적용)</label>
     <button class="btn primary" id="login-submit-btn" style="width:100%">로그인</button>
+  </div>
+</div>
+
+<div id="confirm-modal">
+  <div class="card confirm-card">
+    <p id="confirm-modal-message">삭제할까요?</p>
+    <div class="confirm-actions">
+      <button class="btn" id="confirm-modal-cancel" type="button">취소</button>
+      <button class="btn danger" id="confirm-modal-ok" type="button">삭제</button>
+    </div>
   </div>
 </div>
 
@@ -1413,13 +1430,13 @@ function renderMemberList(){
 function openMemberEditor(index){
   const a=teacherAccounts[index]; if(!a)return; const list=document.getElementById('member-list');
   list.innerHTML=`<div class="member-edit"><input id="member-edit-id" value="${escapeHtml(a.id)}" maxlength="30"><input id="member-edit-name" value="${escapeHtml(a.name||'')}" maxlength="30"><input id="member-edit-pw" type="password" placeholder="비밀번호 변경 시 입력" minlength="4" maxlength="30"><div class="member-actions"><button class="btn primary" id="member-edit-save">저장</button><button class="btn" id="member-edit-cancel">취소</button></div></div>`;
-  document.getElementById('member-edit-save').addEventListener('click',async ()=>{ const id=document.getElementById('member-edit-id').value.trim(),name=document.getElementById('member-edit-name').value.trim(),pw=document.getElementById('member-edit-pw').value; if(!id||!name){alert('아이디와 이름을 입력해주세요.');return;} if(pw&&pw.length<4){alert('비밀번호는 4자 이상이어야 합니다.');return;} if(getTimetableServerUrl()){try{const data=await requestTimetableServer_({action:'upsertMember',token:serverSessionToken,originalId:a.id,id,name,password:pw});if(!data||!data.ok)throw new Error((data&&data.error)||'수정에 실패했습니다.');if(a.id===currentAccountId){currentAccountId=id;currentUser=name;updateUserBadge();}await syncRemoteMemberList_();}catch(error){alert(error.message||'수정에 실패했습니다.');}return;} if(teacherAccounts.some((m,n)=>n!==index&&m.id===id)){alert('이미 사용 중인 아이디입니다.');return;} teacherAccounts[index]={...a,id,name,password:pw||a.password};saveMemberRegistry();if(a.id===currentAccountId){currentAccountId=id;currentUser=name;updateUserBadge();}renderMemberList(); });
+  document.getElementById('member-edit-save').addEventListener('click',async ()=>{ const id=document.getElementById('member-edit-id').value.trim(),name=document.getElementById('member-edit-name').value.trim(),pw=document.getElementById('member-edit-pw').value; if(!id||!name){alert('아이디와 이름을 입력해주세요.');return;} if(pw&&pw.length<4){alert('비밀번호는 4자 이상이어야 합니다.');return;} if(getTimetableServerUrl()){try{const data=await requestTimetableServer_({action:'upsertMember',token:serverSessionToken,originalId:a.id,id,name,password:pw});if(!data||!data.ok)throw new Error((data&&data.error)||'수정에 실패했습니다.');if(a.id===currentAccountId){currentAccountId=id;currentUser=name;updateUserBadge();}await syncRemoteMemberList_();alert('완료되었습니다.\n'+name+' 회원 정보를 수정했습니다.');}catch(error){alert('실패하였습니다.\n'+(error.message||'수정에 실패했습니다.'));}return;} if(teacherAccounts.some((m,n)=>n!==index&&m.id===id)){alert('이미 사용 중인 아이디입니다.');return;} teacherAccounts[index]={...a,id,name,password:pw||a.password};saveMemberRegistry();if(a.id===currentAccountId){currentAccountId=id;currentUser=name;updateUserBadge();}renderMemberList();alert('완료되었습니다.\n'+name+' 회원 정보를 수정했습니다.'); });
   document.getElementById('member-edit-cancel').addEventListener('click',renderMemberList);
 }
-async function deleteMember(index){ const a=teacherAccounts[index];if(!a||a.role==='admin')return;if(!confirm(`${a.name||a.id} 회원을 삭제할까요?`))return;if(getTimetableServerUrl()){try{const data=await requestTimetableServer_({action:'deleteMember',token:serverSessionToken,id:a.id});if(!data||!data.ok)throw new Error((data&&data.error)||'삭제에 실패했습니다.');await syncRemoteMemberList_();}catch(error){alert(error.message||'삭제에 실패했습니다.');}return;}teacherAccounts.splice(index,1);saveMemberRegistry();renderMemberList(); }
+async function deleteMember(index){ const a=teacherAccounts[index];if(!a||a.role==='admin')return;if(!(await customConfirm_(`${a.name||a.id} 회원을 삭제할까요?`)))return;if(getTimetableServerUrl()){try{const data=await requestTimetableServer_({action:'deleteMember',token:serverSessionToken,id:a.id});if(!data||!data.ok)throw new Error((data&&data.error)||'삭제에 실패했습니다.');await syncRemoteMemberList_();alert('완료되었습니다.\n'+(a.name||a.id)+' 회원을 삭제했습니다.');}catch(error){alert('실패하였습니다.\n'+(error.message||'삭제에 실패했습니다.'));}return;}teacherAccounts.splice(index,1);saveMemberRegistry();renderMemberList();alert('완료되었습니다.\n'+(a.name||a.id)+' 회원을 삭제했습니다.'); }
 function initMemberManagement(){
   const form=document.getElementById('member-add-form');
-  if(form) form.addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('member-add-id').value.trim(),name=document.getElementById('member-add-name').value.trim(),password=document.getElementById('member-add-password').value;if(!id||!name||password.length<4){alert('아이디·이름·4자 이상 비밀번호를 입력해주세요.');return;}if(getTimetableServerUrl()){try{const data=await requestTimetableServer_({action:'upsertMember',token:serverSessionToken,originalId:'',id,name,password});if(!data||!data.ok)throw new Error((data&&data.error)||'추가에 실패했습니다.');form.reset();await syncRemoteMemberList_();}catch(error){alert(error.message||'추가에 실패했습니다.');}return;}if(teacherAccounts.some(a=>a.id===id)){alert('이미 사용 중인 아이디입니다.');return;}teacherAccounts.push({id,name,password,role:'teacher'});saveMemberRegistry();form.reset();renderMemberList();});
+  if(form) form.addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('member-add-id').value.trim(),name=document.getElementById('member-add-name').value.trim(),password=document.getElementById('member-add-password').value;if(!id||!name||password.length<4){alert('아이디·이름·4자 이상 비밀번호를 입력해주세요.');return;}if(getTimetableServerUrl()){try{const data=await requestTimetableServer_({action:'upsertMember',token:serverSessionToken,originalId:'',id,name,password});if(!data||!data.ok)throw new Error((data&&data.error)||'추가에 실패했습니다.');form.reset();await syncRemoteMemberList_();alert('완료되었습니다.\n'+name+' 회원을 추가했습니다.');}catch(error){alert('실패하였습니다.\n'+(error.message||'추가에 실패했습니다.'));}return;}if(teacherAccounts.some(a=>a.id===id)){alert('이미 사용 중인 아이디입니다.');return;}teacherAccounts.push({id,name,password,role:'teacher'});saveMemberRegistry();form.reset();renderMemberList();alert('완료되었습니다.\n'+name+' 회원을 추가했습니다.');});
   const urlInput=document.getElementById('timetable-server-url'),urlSave=document.getElementById('timetable-server-save');
   if(urlInput) urlInput.value=getTimetableServerUrl();
   if(urlSave) urlSave.addEventListener('click',async ()=>{
@@ -1437,10 +1454,12 @@ function initMemberManagement(){
         serverSessionToken=login.token||'';
         await syncRemoteMemberList_();
         status.className='quickadd-status ok';status.textContent='웹 앱 연결과 마스터 회원 명부 동기화를 완료했습니다.';
+        alert('완료되었습니다.\n웹 앱 연결과 마스터 회원 명부 동기화를 완료했습니다.');
       }else{
         status.className='quickadd-status ok';status.textContent='웹 앱 연결을 확인했습니다. 사용자 전환 후 다시 로그인하면 회원 명부와 본인 시간표를 자동 조회합니다.';
+        alert('완료되었습니다.\n웹 앱 연결을 확인했습니다.');
       }
-    }catch(error){status.className='quickadd-status err';status.textContent=`연결 확인 실패: ${error.message||'새 버전으로 배포한 /exec 주소인지 확인하세요.'}`;}
+    }catch(error){const msg=`연결 확인 실패: ${error.message||'새 버전으로 배포한 /exec 주소인지 확인하세요.'}`;status.className='quickadd-status err';status.textContent=msg;alert('실패하였습니다.\n'+msg);}
   });
 }
 
@@ -1800,6 +1819,34 @@ async function loadAll(){
   if(document.getElementById('tab-timetable-cache').classList.contains('active')) renderTimetableCacheTab(latestTimetableCacheRows);
 }
 
+function customConfirm_(message, opts){
+  opts = opts || {};
+  const okLabel = opts.okLabel || '삭제';
+  const cancelLabel = opts.cancelLabel || '취소';
+  return new Promise(function(resolve){
+    const modal=document.getElementById('confirm-modal');
+    const msgEl=document.getElementById('confirm-modal-message');
+    const okBtn=document.getElementById('confirm-modal-ok');
+    const cancelBtn=document.getElementById('confirm-modal-cancel');
+    msgEl.textContent = message || '삭제할까요?';
+    okBtn.textContent = okLabel;
+    cancelBtn.textContent = cancelLabel;
+    modal.classList.add('show');
+    function cleanup(result){
+      modal.classList.remove('show');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+      resolve(result);
+    }
+    function onOk(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    function onBackdrop(e){ if(e.target===modal) cleanup(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    modal.addEventListener('click', onBackdrop);
+  });
+}
 function showStatus(kind, msg){
   const el = document.getElementById('status-banner');
   el.style.display='flex';
@@ -1949,7 +1996,7 @@ function applyLocalDashboardMutation_(sheet,rowNumber,row,mode){
   }
 }
 async function deleteDashboardRow(sheet,rowNumber,label){
-  if(!confirm(`${label} 항목을 삭제할까요?`)) return;
+  if(!(await customConfirm_(`${label} 항목을 삭제할까요?`))) return;
   applyLocalDashboardMutation_(sheet,rowNumber,[],'delete');
   const result=await postRowToSheet(sheet,[], 'deleteRow', rowNumber);
   if(result.success){
@@ -2899,7 +2946,7 @@ function renderProgressLog(){
     btn.addEventListener('click', async ()=>{
       const i = parseInt(btn.dataset.i,10);
       const entry=entries[i];
-      if(!entry||!confirm('이 기록을 정말 삭제할까요? 삭제하면 되돌릴 수 없어요.')) return;
+      if(!entry||!(await customConfirm_('이 기록을 정말 삭제할까요? 삭제하면 되돌릴 수 없어요.'))) return;
       const store2 = loadProgressStore();
       const removed=(store2[entry.__storeKey]||[]).splice(entry.__storeIndex,1)[0];
       saveProgressStore(store2);
@@ -3688,9 +3735,9 @@ function renderActivityClassLog(){
     return `<div class="activity-student-group"><div class="activity-student-heading"><strong>${escapeHtml(student.no)}번 ${escapeHtml(student.name)}</strong><span>${entries.length}건</span></div><div class="progress-log">${body}</div></div>`;
   }).join('');
   resultsEl.innerHTML=cards||'<div class="result-empty">해당 반 학생이 없습니다.</div>';
-  resultsEl.querySelectorAll('[data-summary-i]').forEach(btn=>btn.addEventListener('click',()=>{
+  resultsEl.querySelectorAll('[data-summary-i]').forEach(btn=>btn.addEventListener('click',async ()=>{
     const key=btn.dataset.summaryKey, i=Number(btn.dataset.summaryI), next=loadActivityStore();
-    if(!next[key]||!confirm('이 기록을 정말 삭제할까요? 삭제하면 되돌릴 수 없어요.'))return;
+    if(!next[key]||!(await customConfirm_('이 기록을 정말 삭제할까요? 삭제하면 되돌릴 수 없어요.')))return;
     next[key].splice(i,1);saveActivityStore(next);renderActivityLog();
   }));
 }
@@ -3730,9 +3777,9 @@ function renderActivityLog(){
     list.appendChild(div);
   });
   list.querySelectorAll('.pe-del').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
+    btn.addEventListener('click', async ()=>{
       const i = parseInt(btn.dataset.i,10);
-      if(!confirm('이 기록을 정말 삭제할까요? 삭제하면 되돌릴 수 없어요.')) return;
+      if(!(await customConfirm_('이 기록을 정말 삭제할까요? 삭제하면 되돌릴 수 없어요.'))) return;
       const store2 = loadActivityStore();
       store2[key].splice(i,1);
       saveActivityStore(store2);
@@ -4174,16 +4221,16 @@ async function shareGijangApp(){
     const p=preferences();
     root.innerHTML='<div class="settings-grid"><article class="card"><h3>개인 계정 설정</h3><p class="progress-note">현재 로그인 계정의 비밀번호와 알림 방식을 변경합니다.</p><label class="field">현재 비밀번호<input id="my-current-password" type="password" autocomplete="current-password"></label><label class="field">새 비밀번호<input id="my-new-password" type="password" minlength="4" autocomplete="new-password"></label><label class="field">새 비밀번호 확인<input id="my-new-password-confirm" type="password" minlength="4" autocomplete="new-password"></label><button class="btn primary" id="my-password-save" type="button">비밀번호 변경</button><div id="my-password-status" class="settings-message"></div></article><article class="card"><h3>접속 알림</h3>'+settingRow('pref-duty-alert','오늘 급식 당번 알림','접속 시 오늘 내가 담당한 급식 당번이 있으면 팝업으로 알려줍니다.')+settingRow('pref-calendar-alert','오늘 학사일정 알림','접속 시 오늘의 학사일정이 있으면 알려줍니다.')+settingRow('pref-notice-alert','담임 전달사항 알림','접속 시 현재 적용 중인 담임교사 전달사항이 있으면 알려줍니다.')+'<button class="btn primary" id="my-pref-save" type="button" style="margin-top:14px">알림 설정 저장</button><div id="my-pref-status" class="settings-message"></div></article></div><div id="duty-settings-area"></div>';
     document.getElementById('pref-duty-alert').checked=p.dutyAlert!==false;document.getElementById('pref-calendar-alert').checked=!!p.calendarAlert;document.getElementById('pref-notice-alert').checked=!!p.noticeAlert;
-    document.getElementById('my-pref-save').onclick=function(){savePreferences({dutyAlert:document.getElementById('pref-duty-alert').checked,calendarAlert:document.getElementById('pref-calendar-alert').checked,noticeAlert:document.getElementById('pref-notice-alert').checked});const s=document.getElementById('my-pref-status');s.className='settings-message ok';s.textContent='이 기기의 알림 설정을 저장했습니다.';};
+    document.getElementById('my-pref-save').onclick=function(){savePreferences({dutyAlert:document.getElementById('pref-duty-alert').checked,calendarAlert:document.getElementById('pref-calendar-alert').checked,noticeAlert:document.getElementById('pref-notice-alert').checked});const s=document.getElementById('my-pref-status');s.className='settings-message ok';s.textContent='이 기기의 알림 설정을 저장했습니다.';alert('완료되었습니다.\n이 기기의 알림 설정을 저장했습니다.');};
     document.getElementById('my-password-save').onclick=changeMyPassword;
     renderDutySettings();
   }
   async function changeMyPassword(){
     const current=document.getElementById('my-current-password').value,newPw=document.getElementById('my-new-password').value,confirmPw=document.getElementById('my-new-password-confirm').value,status=document.getElementById('my-password-status');
-    if(!current||newPw.length<4||newPw!==confirmPw){status.className='settings-message err';status.textContent='현재 비밀번호와 4자 이상의 동일한 새 비밀번호를 입력하세요.';return;}
+    if(!current||newPw.length<4||newPw!==confirmPw){status.className='settings-message err';status.textContent='현재 비밀번호와 4자 이상의 동일한 새 비밀번호를 입력하세요.';alert('실패하였습니다.\n현재 비밀번호와 4자 이상의 동일한 새 비밀번호를 입력하세요.');return;}
     status.className='settings-message';status.textContent='변경 중...';
     const result=await postApp({action:'passwordChange',loginId:currentAccountId,currentPassword:current,newPassword:newPw});
-    if(result.success){currentLoginPassword=newPw;try{const stored=JSON.parse(localStorage.getItem(USER_STORAGE_KEY)||'{}');if(stored.id===currentAccountId){stored.password=newPw;localStorage.setItem(USER_STORAGE_KEY,JSON.stringify(stored));}}catch(e){}status.className='settings-message ok';status.textContent='비밀번호를 변경했습니다. 다음 로그인부터 새 비밀번호를 사용하세요.';document.getElementById('my-current-password').value='';document.getElementById('my-new-password').value='';document.getElementById('my-new-password-confirm').value='';}else{status.className='settings-message err';status.textContent=result.error||'비밀번호를 변경하지 못했습니다.';}
+    if(result.success){currentLoginPassword=newPw;try{const stored=JSON.parse(localStorage.getItem(USER_STORAGE_KEY)||'{}');if(stored.id===currentAccountId){stored.password=newPw;localStorage.setItem(USER_STORAGE_KEY,JSON.stringify(stored));}}catch(e){}status.className='settings-message ok';status.textContent='비밀번호를 변경했습니다. 다음 로그인부터 새 비밀번호를 사용하세요.';document.getElementById('my-current-password').value='';document.getElementById('my-new-password').value='';document.getElementById('my-new-password-confirm').value='';alert('완료되었습니다.\n비밀번호를 변경했습니다. 다음 로그인부터 새 비밀번호를 사용하세요.');}else{status.className='settings-message err';status.textContent=result.error||'비밀번호를 변경하지 못했습니다.';alert('실패하였습니다.\n'+(result.error||'비밀번호를 변경하지 못했습니다.'));}
   }
   function renderDutySettings(){
     const root=document.getElementById('weekly-duty-edit-form');if(!root)return;
@@ -4193,7 +4240,7 @@ async function shareGijangApp(){
   }
   function toggleDutyEditor(){const root=document.getElementById('weekly-duty-edit-form');if(!root||!permissionFor('duty'))return;renderDutySettings();root.classList.toggle('show');}
   function renderDutyEditRows(){const group=Number(document.getElementById('duty-edit-group').value);const rows=(weeklyDutyRotation.groups[group]||[]).slice(0,5);const body=document.getElementById('duty-edit-body');body.innerHTML=Array.from({length:5},function(_,i){const r=rows[i]||{task:'업무 '+(i+1),days:['','','','','']};return '<tr><td><input data-duty-task value="'+escapeHtml(r.task||'')+'"></td>'+[0,1,2,3,4].map(function(d){return '<td><input data-duty-day="'+d+'" value="'+escapeHtml((r.days||[])[d]||'')+'"></td>';}).join('')+'</tr>';}).join('');}
-  async function saveDutyEdit(){const group=Number(document.getElementById('duty-edit-group').value), status=document.getElementById('duty-edit-status'),rows=Array.from(document.querySelectorAll('#duty-edit-body tr')).map(function(tr){return {task:tr.querySelector('[data-duty-task]').value,days:Array.from(tr.querySelectorAll('[data-duty-day]')).map(function(el){return el.value;})};});status.className='settings-message';status.textContent='시트에 저장 중...';const result=await postApp({action:'dutyRotationSave',group:group,rows:rows,loginId:currentAccountId,password:currentLoginPassword});if(result.success){status.className='settings-message ok';status.textContent='조별 반복 당번표를 저장했습니다.';await loadAll();}else{status.className='settings-message err';status.textContent=result.error||'당번표를 저장하지 못했습니다.';}}
+  async function saveDutyEdit(){const group=Number(document.getElementById('duty-edit-group').value), status=document.getElementById('duty-edit-status'),rows=Array.from(document.querySelectorAll('#duty-edit-body tr')).map(function(tr){return {task:tr.querySelector('[data-duty-task]').value,days:Array.from(tr.querySelectorAll('[data-duty-day]')).map(function(el){return el.value;})};});status.className='settings-message';status.textContent='시트에 저장 중...';const result=await postApp({action:'dutyRotationSave',group:group,rows:rows,loginId:currentAccountId,password:currentLoginPassword});if(result.success){status.className='settings-message ok';status.textContent='조별 반복 당번표를 저장했습니다.';await loadAll();alert('완료되었습니다.\n조별 반복 당번표를 저장했습니다.');}else{status.className='settings-message err';status.textContent=result.error||'당번표를 저장하지 못했습니다.';alert('실패하였습니다.\n'+(result.error||'당번표를 저장하지 못했습니다.'));}}
   function renderMasterPermissions(){
     const root=document.getElementById('master-permissions-area');if(!root)return;
     let teachers=(teacherAccounts||[]).filter(function(a){return a.role!=='admin';});
