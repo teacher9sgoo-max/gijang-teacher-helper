@@ -1179,8 +1179,8 @@ const SHEET_ID = '1_qIRbv44zWd9yv4yNzTQ0frXTvILl2-iejzPqhF8i2w';
 const SHEET_EDIT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
 // 시트에 새 행을 "쓰기"위한 구글 앱스크립트 웹앱 주소. 아래 안내에 따라 배포한 뒤,
 // 나온 URL(.../exec 로 끝남)을 여기에 붙여넣어야 대시보드에서 바로 추가하기가 동작합니다.
-const WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbxGOJ4oPC2W1qqcger47LhvgDFhVuLLCBxoottOvT09pwp3-wyA91i6Yustckm7IG1Z/exec';
-const LEGACY_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbzyn9p3DK549jOjrNe6f3MgcO9K1RYTt747Wv-Ojo6hXR0Zzo6p3D0psEZfedhvsuyY/exec';
+const WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbxucaf195_4iYTZOyTur0N7QMGUUAGoqUquJp26gXRBmqOnCDlABHl-HlIyTB1ibvew/exec';
+const LEGACY_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbxGOJ4oPC2W1qqcger47LhvgDFhVuLLCBxoottOvT09pwp3-wyA91i6Yustckm7IG1Z/exec';
 const OLDER_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbzCnG_GceglJA6pFfxX5EzEIPEoHvhGK5gyfRHpe4nNNyNATXJi39QEWVOEAL_rC3Uc/exec';
 let ACTIVE_SHEET_ID = SHEET_ID;
 let ACTIVE_WRITE_API_URL = WRITE_API_URL;
@@ -1194,7 +1194,7 @@ function applyActiveSiteConfig_(config){
   if(config.timetableOfficialUrl)ACTIVE_TIMETABLE_OFFICIAL_URL=String(config.timetableOfficialUrl).trim();
   if(config.windowsInstallerUrl)ACTIVE_WINDOWS_INSTALLER_URL=String(config.windowsInstallerUrl).trim();
 }
-function getActiveSiteConfig_(){return {sheetId:ACTIVE_SHEET_ID,writeApiUrl:ACTIVE_WRITE_API_URL,timetableOfficialUrl:ACTIVE_TIMETABLE_OFFICIAL_URL,windowsInstallerUrl:ACTIVE_WINDOWS_INSTALLER_URL};}
+function getActiveSiteConfig_(){return {sheetId:ACTIVE_SHEET_ID,writeApiUrl:ACTIVE_WRITE_API_URL,timetableOfficialUrl:ACTIVE_TIMETABLE_OFFICIAL_URL,timetableServerUrl:(localStorage.getItem(TIMETABLE_SERVER_URL_KEY)||''),windowsInstallerUrl:ACTIVE_WINDOWS_INSTALLER_URL};}
 function activeSheetEditUrl(){return `https://docs.google.com/spreadsheets/d/${ACTIVE_SHEET_ID}/edit`;}
 function activeWriteApiUrl(){return String(ACTIVE_WRITE_API_URL||WRITE_API_URL||'').trim().replace(/\/$/,'');}
 
@@ -4105,7 +4105,7 @@ async function shareGijangApp(){
 
   function injectCss(){
     const style=document.createElement('style');
-    style.textContent='.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.settings-grid .card{padding:22px}.settings-grid h3{margin-top:0}.setting-option{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);font-size:14px}.setting-option:last-child{border:0}.setting-option input{width:18px;height:18px;accent-color:var(--accent)}.permissions-table{width:100%;border-collapse:collapse}.permissions-table th,.permissions-table td{padding:10px 8px;border-bottom:1px solid var(--border);text-align:left;font-size:14px}.permissions-table th{color:var(--text-soft)}.permissions-table input{width:18px;height:18px;accent-color:var(--accent)}.duty-edit-table{width:100%;border-collapse:collapse;min-width:680px}.duty-edit-table th,.duty-edit-table td{border:1px solid var(--border);padding:5px;background:#fffdf6}.duty-edit-table input{width:100%;min-width:72px;padding:7px;border:0;background:transparent}.duty-edit-scroll{overflow:auto}.settings-message{font-size:13px;min-height:20px;margin-top:10px}.settings-message.ok{color:#266649}.settings-message.err{color:#9d3e2b}.permission-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0}.permission-toolbar input{flex:1;min-width:220px;border:1px solid var(--border);border-radius:9px;padding:10px 11px;font:inherit;background:#fff}@media(max-width:760px){.settings-grid{grid-template-columns:1fr}}';
+    style.textContent='.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.settings-grid .card{padding:22px}.settings-grid h3{margin-top:0}.setting-option{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);font-size:14px}.setting-option:last-child{border:0}.setting-option input{width:18px;height:18px;accent-color:var(--accent)}.permissions-table{width:100%;border-collapse:collapse}.permissions-table th,.permissions-table td{padding:10px 8px;border-bottom:1px solid var(--border);text-align:left;font-size:14px}.permissions-table th{color:var(--text-soft)}.permissions-table input{width:18px;height:18px;accent-color:var(--accent)}.duty-edit-table{width:100%;border-collapse:collapse;min-width:680px}.duty-edit-table th,.duty-edit-table td{border:1px solid var(--border);padding:5px;background:#fffdf6}.duty-edit-table input{width:100%;min-width:72px;padding:7px;border:0;background:transparent}.duty-edit-scroll{overflow:auto}.settings-message{font-size:13px;min-height:20px;margin-top:10px}.settings-message.ok{color:#266649}.settings-message.err{color:#9d3e2b}.permission-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0}.permission-toolbar input{flex:1;min-width:220px;border:1px solid var(--border);border-radius:9px;padding:10px 11px;font:inherit;background:#fff}.settings-page-shell,.permissions-page-shell{width:100%;max-width:1180px;margin:0 auto;padding:0 24px 48px;box-sizing:border-box}.settings-page-shell>.section-title,.permissions-page-shell>.section-title{max-width:960px;margin:0 auto 20px}.settings-page-shell>#settings-content,.permissions-page-shell>#master-permissions-area{max-width:1080px;margin:0 auto}.settings-page-shell .settings-grid{width:100%}.permissions-page-shell .card{width:100%;box-sizing:border-box}@media(max-width:760px){.settings-grid{grid-template-columns:1fr}.settings-page-shell,.permissions-page-shell{padding:0 10px 32px}}';
     document.head.appendChild(style);
   }
   function openPersonalSettings(){
@@ -4130,12 +4130,12 @@ async function shareGijangApp(){
     }
     if(!document.getElementById('tab-settings')){
       const section=document.createElement('section');section.className='tab';section.id='tab-settings';
-      section.innerHTML='<div class="section-title"><div><h2>내 설정</h2><p>비밀번호, 접속 알림과 나에게 허용된 수정 권한을 관리합니다.</p></div></div><div id="settings-content"></div>';
+      section.innerHTML='<div class="settings-page-shell"><div class="section-title"><div><h2>내 설정</h2><p>비밀번호, 접속 알림과 나에게 허용된 수정 권한을 관리합니다.</p></div></div><div id="settings-content"></div></div>';
       const modal=document.getElementById('day-modal');modal.parentNode.insertBefore(section,modal);
     }
     if(!document.getElementById('tab-permissions')){
       const section=document.createElement('section');section.className='tab';section.id='tab-permissions';
-      section.innerHTML='<div class="section-title"><div><h2>교사 작성 및 접근 권한</h2><p>교사 계정을 확인하고, 교사별로 학사일정·담임교사 전달사항·조별 반복 급식 당번표의 작성 권한을 제어합니다.</p></div></div><div id="master-permissions-area"></div>';
+      section.innerHTML='<div class="permissions-page-shell"><div class="section-title"><div><h2>교사 작성 및 접근 권한</h2><p>교사 계정을 확인하고, 교사별로 학사일정·담임교사 전달사항·조별 반복 급식 당번표의 작성 권한을 제어합니다.</p></div></div><div id="master-permissions-area"></div></div>';
       const modal=document.getElementById('day-modal');modal.parentNode.insertBefore(section,modal);
     }
   }
@@ -4321,13 +4321,46 @@ async function shareGijangApp(){
     if(onlyId){const el=document.getElementById(onlyId),key=fieldMap[onlyId];if(!el||!key){status.className='settings-message err';status.textContent='저장할 설정 항목을 찾지 못했습니다.';return;}const value=el.value.trim();if(!value&&onlyId!=='site-timetable-server-url'){status.className='settings-message err';status.textContent='이 항목의 값을 입력하세요.';return;}cfg[key]=value;}
     else{cfg.sheetId=document.getElementById('site-sheet-id').value.trim();cfg.writeApiUrl=document.getElementById('site-write-url').value.trim();cfg.timetableOfficialUrl=document.getElementById('site-timetable-url').value.trim();cfg.timetableServerUrl=document.getElementById('site-timetable-server-url').value.trim();cfg.windowsInstallerUrl=document.getElementById('site-installer-url').value.trim();if(!cfg.sheetId||!cfg.writeApiUrl||!cfg.timetableOfficialUrl||!cfg.windowsInstallerUrl){status.className='settings-message err';status.textContent='필수 주소를 모두 입력하세요.';return;}}
     status.className='settings-message';status.textContent='저장 중입니다...';
-    try{
-      const endpoint=activeWriteApiUrl();
-      if(!endpoint)throw new Error('현재 연결된 Apps Script 웹앱 주소가 없습니다.');
-      const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'siteConfigUpdate',loginId:currentAccountId,password:currentLoginPassword,config:cfg})});
-      const data=await res.json();if(!data.success)throw new Error(data.error||'저장에 실패했습니다.');
-      setSiteConfig_(data.config);status.className='settings-message ok';status.textContent=(onlyId?'선택한 사이트 주소가 저장되었습니다. 새 주소를 앱 연결에 적용했습니다.':'사이트 설정이 저장되었습니다. 이후 새로고침부터 적용됩니다.');if(!onlyId)renderSiteSettings_();
-    }catch(error){status.className='settings-message err';status.textContent=error.message||'사이트 설정 저장에 실패했습니다.';}
+    // Apps Script 주소(cfg.writeApiUrl)를 바꾸는 경우, 저장 요청은 "이전" 주소가 아니라
+    // 사용자가 새로 입력한 "새" 주소로 먼저 보낸다. 기존 주소로만 보내면 이미 재배포되었거나
+    // 삭제된 이전 배포가 응답하지 못해 항상 에러가 나는 문제(달걀-닭 문제)가 있었다.
+    const oldEndpoint=activeWriteApiUrl();
+    const newEndpoint=(cfg.writeApiUrl||'').trim();
+    const candidates=[];
+    if(newEndpoint)candidates.push(newEndpoint);
+    if(oldEndpoint&&oldEndpoint!==newEndpoint)candidates.push(oldEndpoint);
+    if(!candidates.length){status.className='settings-message err';status.textContent='요청을 보낼 Apps Script 웹앱 주소가 없습니다.';return;}
+    let lastError=null;
+    for(let i=0;i<candidates.length;i++){
+      const endpoint=candidates[i];
+      try{
+        let res;
+        try{
+          res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'siteConfigUpdate',loginId:currentAccountId,password:currentLoginPassword,config:cfg})});
+        }catch(networkError){
+          throw new Error('서버에 연결하지 못했습니다('+endpoint+'). 주소가 정확한지, 배포 액세스 권한이 "모든 사용자"로 되어 있는지 확인하세요.');
+        }
+        let data;
+        const raw=await res.text();
+        try{
+          data=JSON.parse(raw);
+        }catch(parseError){
+          throw new Error('서버가 올바른 응답을 주지 않았습니다('+endpoint+'). Apps Script 코드에 "siteConfigUpdate" 액션이 있는지, 최신 코드로 재배포했는지 확인하세요.');
+        }
+        if(!data.success)throw new Error((data.error||'저장에 실패했습니다.')+' ('+endpoint+')');
+        setSiteConfig_(data.config||cfg);
+        status.className='settings-message ok';
+        const okMessage=(onlyId?'선택한 사이트 주소가 저장되었습니다. 새 주소를 앱 연결에 적용했습니다.':'사이트 설정이 저장되었습니다. 이후 새로고침부터 적용됩니다.')+(i>0?' (이전 주소로 저장됨)':'');
+        status.textContent=okMessage;
+        setTimeout(function(){alert('완료되었습니다.\n'+okMessage);},50);
+        if(!onlyId)renderSiteSettings_();
+        return;
+      }catch(error){lastError=error;}
+    }
+    const errMessage=(lastError&&lastError.message)||'사이트 설정 저장에 실패했습니다.';
+    status.className='settings-message err';
+    status.textContent=errMessage;
+    setTimeout(function(){alert('실패하였습니다.\n'+errMessage);},50);
   }
   document.addEventListener('click',function(event){const button=event.target.closest&&event.target.closest('[data-tab="site-config"]');if(button){setTimeout(function(){ensureSiteSettings_();renderSiteSettings_();},0);}});
   document.addEventListener('DOMContentLoaded',function(){ensureSiteSettings_();siteSettingsNav_();loadSiteConfig_();});
