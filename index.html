@@ -213,6 +213,8 @@ section.tab.active{display:block; animation:fade .25s ease;}
 
 /* Meal duty (급식당번) — 학년별(1/2/3) 요일 담당 교사, 2주 로테이션 */
 .duty-card{padding:26px; min-width:0;}
+/* 이전 급식 당번 입력 카드는 기능을 보존하되 화면에서는 새 조별 급식 당번으로 대체합니다. */
+.legacy-duty-card{display:none !important;}
 .duty-card h2{font-size:20px; font-weight:700; margin:0 0 16px; letter-spacing:-0.01em;}
 .duty-cols{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px;}
 .duty-col h4{
@@ -235,6 +237,32 @@ section.tab.active{display:block; animation:fade .25s ease;}
 .duty-day .dd-name{font-size:11px; font-weight:700; color:var(--text); word-break:keep-all; line-height:1.2;}
 .duty-day.is-today .dd-name{color:#fff;}
 @media (max-width:760px){ .duty-cols{grid-template-columns:1fr;} }
+
+/* 조별 반복 당번표 — 구글 시트 ‘조별 반복 당번표’와 연동 */
+.rotation-duty-card{padding:24px; min-width:0;}
+.rotation-duty-head{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
+.rotation-duty-head h2{font-size:20px; margin:0; letter-spacing:-.01em;}
+.rotation-duty-meta{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-soft);}
+.rotation-duty-badge{background:var(--chalk-lime,#C9E66D); color:#274120; font-weight:800; padding:5px 9px; border-radius:5px;}
+.rotation-duty-brief-grid{display:grid; grid-template-columns:1fr; gap:8px; margin:0 0 12px;}
+.rotation-duty-today{display:flex; align-items:stretch; gap:12px; padding:12px 14px; background:#F2F7E9; border:1px solid #D8E8B4; border-left:4px solid var(--chalk-lime,#C9E66D);}
+.rotation-duty-next{display:flex; align-items:stretch; gap:12px; padding:12px 14px; background:#FFF3E7; border:1px solid #F0CBA8; border-left:4px solid var(--terracotta,#D86B3A);}
+.rotation-duty-today-label{min-width:84px; font-size:12px; font-weight:800; color:#365027; display:flex; align-items:center;}
+.rotation-duty-next .rotation-duty-today-label{color:#8A482C;}
+.rotation-duty-today-list{display:flex; gap:7px; flex-wrap:wrap; align-items:center;}
+.rotation-duty-today-item{font-size:12px; padding:5px 8px; background:#fff; border:1px solid #DCE8CA; color:var(--text);}
+.rotation-duty-next .rotation-duty-today-item{border-color:#F0CBA8;}
+.rotation-duty-today-item b{color:var(--nameplate); margin-right:4px;}
+.rotation-duty-table .today-duty-cell{background:#EAF6B9 !important; box-shadow:inset 0 0 0 1px #B6D957; font-weight:800; color:#274120;}
+.rotation-duty-table .today-duty-head{background:#C9E66D !important; color:#274120;}
+.rotation-duty-table{width:100%; border-collapse:collapse; table-layout:fixed; font-size:13px;}
+.rotation-duty-table th,.rotation-duty-table td{border:1px solid var(--border); padding:9px 6px; text-align:center; vertical-align:middle; word-break:keep-all;}
+.rotation-duty-table th{background:#FFF8EB; font-weight:800; color:var(--nameplate);}
+.rotation-duty-table td:first-child{background:#F5E8D0; font-weight:800; width:18%;}
+.rotation-duty-table tr.checked td{background:#F2F7E9;}
+.rotation-duty-check{font-size:11px; color:var(--text-soft);}
+.rotation-duty-empty{padding:16px; border:1px dashed var(--border); background:var(--surface-2); color:var(--text-soft); font-size:13px; line-height:1.6;}
+@media (max-width:760px){.rotation-duty-card{overflow:auto}.rotation-duty-table{min-width:540px;}.rotation-duty-head{align-items:flex-start;}.rotation-duty-brief-grid{grid-template-columns:1fr;}}
 
 /* ---------- Tool tabs (shared form styling) ---------- */
 .tool-grid{display:grid; grid-template-columns:minmax(260px,340px) 1fr; gap:20px; align-items:start; min-width:0;}
@@ -456,6 +484,11 @@ textarea{resize:vertical; min-height:64px;}
 }
 .progress-entry .pe-top{display:flex; justify-content:space-between; align-items:center; gap:8px;}
 .progress-entry .pe-date{font-family:'JetBrains Mono'; font-size:11.5px; color:var(--text-soft); font-weight:600;}
+.progress-group-heading{display:flex;align-items:center;gap:7px;margin:12px 0 2px;padding:8px 10px;border-left:4px solid var(--accent);background:var(--surface-3);color:var(--accent);font-size:13px;}
+.progress-group-heading:first-child{margin-top:0;}
+.progress-group-heading span{color:var(--text-faint);font-weight:400;}
+.progress-entry .pe-meta{display:flex;align-items:center;gap:7px;margin:5px 0 6px;color:var(--accent);font-size:13px;letter-spacing:.01em;}
+.progress-entry .pe-meta span{color:var(--text-faint);font-weight:400;}
 .progress-entry .pe-del{background:none; border:none; color:var(--text-faint); cursor:pointer; font-size:16px; line-height:1; padding:2px 4px;}
 .progress-entry .pe-del:hover{color:var(--danger);}
 .progress-entry .pe-content{font-size:14px; line-height:1.55; white-space:pre-wrap;}
@@ -553,6 +586,7 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
       <button class="btn top-install-btn" id="pwa-install-btn" type="button">▣ Windows EXE 설치파일</button>
       <button class="btn top-share-btn" id="pwa-share-btn" type="button">↗ 링크 공유</button>
       <button class="btn top-startup-btn" id="pwa-startup-btn" type="button">↗ 자동 시작 설정</button>
+      <button class="btn" id="personal-settings-btn" type="button">⚙ 내 설정</button>
       <button class="btn" id="switch-user-btn">👤 사용자 전환</button>
       <button class="btn" id="refresh-btn">⟳ 새로고침</button>
     </div>
@@ -562,12 +596,12 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
 
   <nav class="tabs">
     <button data-tab="dashboard" class="active">대시보드</button>
+    <button data-tab="progress">수업 진도</button>
+    <button data-tab="activity">학생 활동 기록</button>
+    <button data-tab="roster">명렬 보기</button>
     <button data-tab="picker">학생 뽑기</button>
     <button data-tab="seat">자리 뽑기</button>
     <button data-tab="group">모둠 뽑기</button>
-    <button data-tab="progress">수업 진도</button>
-    <button data-tab="roster">명렬 보기</button>
-    <button data-tab="activity">학생 활동 기록</button>
     <button data-tab="teacher-timetable">교사 시간표</button>
     <button data-tab="timetable-cache" id="timetable-cache-tab-btn" style="display:none">시간표 캐시</button>
     <button data-tab="members" id="members-tab-btn" style="display:none">회원 명부 관리</button>
@@ -587,7 +621,7 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
             <button id="cal-next">›</button>
           </div>
         </div>
-        <button class="quickadd-toggle" id="qa-cal-toggle">+ 학사일정 추가</button>
+        <button class="quickadd-toggle" id="qa-cal-toggle" style="display:none">+ 학사일정 추가</button>
         <div class="quickadd-form" id="qa-cal-form">
           <div class="quickadd-row">
             <div><label class="qa-inline">날짜</label><input type="date" id="qa-cal-date"></div>
@@ -610,7 +644,7 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
 
       <div class="card notice-card">
         <h2>담임교사 전달사항</h2>
-        <button class="quickadd-toggle" id="qa-notice-toggle">+ 안내사항 추가</button>
+        <button class="quickadd-toggle" id="qa-notice-toggle" style="display:none">+ 안내사항 추가</button>
         <div class="quickadd-form" id="qa-notice-form">
           <div class="quickadd-row">
             <div><label class="qa-inline">시작일</label><input type="date" id="qa-notice-start"></div>
@@ -650,7 +684,7 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
         </div>
       </div>
 
-      <div class="card duty-card">
+      <div class="card duty-card legacy-duty-card">
         <h2>급식 당번</h2>
         <button class="quickadd-toggle" id="qa-duty-toggle">+ 급식당번 추가 (2주치)</button>
         <div class="quickadd-form" id="qa-duty-form">
@@ -695,6 +729,15 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
             <div class="duty-next" id="duty-next-3"></div>
           </div>
         </div>
+      </div>
+
+      <div class="card rotation-duty-card" id="weekly-duty-rotation-card">
+        <div class="rotation-duty-head">
+          <div><h2>급식 당번</h2></div>
+          <div class="rotation-duty-meta"><span id="weekly-duty-rotation-week">-</span><span class="rotation-duty-badge" id="weekly-duty-rotation-badge">-</span><button class="quickadd-toggle" id="weekly-duty-sheet-open-btn" type="button" style="display:none">+ 급식 당번 수정</button></div>
+        </div>
+        <div id="weekly-duty-rotation-results" class="rotation-duty-empty">조별 반복 당번표 시트를 불러오는 중입니다.</div>
+        <div class="quickadd-form" id="weekly-duty-edit-form"></div>
       </div>
     </div>
   </section>
@@ -886,6 +929,7 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
           <button class="btn primary" id="prog-add-btn" style="flex:1">기록 추가</button>
           <button class="btn" id="prog-reset-btn">화면 초기화</button>
         </div>
+        <div class="quickadd-status" id="prog-sync-status" aria-live="polite"></div>
         <div class="field" style="display:flex; gap:8px;">
           <button class="btn dark" id="prog-print-btn" style="flex:1">🖨 인쇄 / PDF</button>
           <button class="btn dark" id="prog-word-btn" style="flex:1">📄 Word 파일 저장 (.docx)</button>
@@ -895,7 +939,7 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
           <button class="btn" id="prog-restore-btn" style="flex:1">⬆ 백업 불러오기</button>
           <input type="file" id="prog-restore-file" accept="application/json" style="display:none">
         </div>
-        <div class="progress-note">모든 기록은 이 브라우저에 자동 저장되며, ✕ 버튼을 눌러 직접 지우지 않는 한 새로고침·재접속해도 그대로 남아있어요. "화면 초기화"는 화면의 선택 상태만 지울 뿐, 저장된 기록은 지우지 않습니다. 다른 기기로 옮기거나 만약을 대비하려면 "전체 기록 백업"으로 파일을 받아두세요.</div>
+        <div class="progress-note">기록은 이 기기에 즉시 저장되고, 연결된 구글 시트의 ‘수업 진도’ 탭에도 함께 전송됩니다. 해당 시트가 없으면 자동으로 만들어집니다. 화면 초기화는 선택 상태만 지우며 저장된 기록은 삭제하지 않습니다.</div>
       </div>
       <div class="card result-card">
         <div id="progress-results" class="printable">
@@ -1105,8 +1149,15 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
     <div class="pwa-help-card">
       <h3 id="pwa-help-title">Windows EXE 설치파일</h3>
       <p>Windows용 설치파일을 내려받아 설치하면 바탕화면·시작 메뉴에서 교무 도우미를 앱처럼 실행할 수 있습니다.</p>
-      <ol><li>아래 <b>Windows EXE 설치파일 받기</b>를 눌러 최신 설치파일을 받습니다.</li><li>설치 중 바탕화면·시작 메뉴 바로가기를 선택합니다.</li><li>앱 로그인 화면에서 <b>컴퓨터 시작 시 자동 실행</b>을 선택하거나, 로그인 후 자동 시작 설정을 변경합니다.</li></ol>
-      <div class="pwa-help-actions"><button class="btn primary" id="pwa-startup-download-btn" type="button">Windows EXE 설치파일 받기</button><button class="btn" id="pwa-autostart-on-btn" type="button">자동 시작 켜기</button><button class="btn" id="pwa-autostart-off-btn" type="button">자동 시작 끄기</button><button class="btn" id="pwa-help-close-btn" type="button">닫기</button></div>
+      <ol><li>아래 <b>Windows EXE 설치파일 받기</b>를 누릅니다.</li><li>GitHub Releases에서 최신 Setup 설치파일을 내려받습니다.</li><li>설치 중 바탕화면·시작 메뉴 바로가기를 선택합니다.</li></ol>
+      <div class="pwa-help-actions"><button class="btn primary" id="pwa-startup-download-btn" type="button">Windows EXE 설치파일 받기</button><button class="btn" id="pwa-help-close-btn" type="button">닫기</button></div>
+    </div>
+  </div>
+  <div id="auto-start-modal" class="pwa-help-modal" role="dialog" aria-modal="true" aria-labelledby="auto-start-title">
+    <div class="pwa-help-card">
+      <h3 id="auto-start-title">자동 시작 설정</h3>
+      <p>이 기능은 설치된 Windows EXE 앱에서만 작동합니다. 웹사이트에서는 Windows 시작 프로그램을 변경할 수 없습니다.</p>
+      <div class="pwa-help-actions"><button class="btn primary" id="pwa-autostart-on-btn" type="button">자동 시작 켜기</button><button class="btn" id="pwa-autostart-off-btn" type="button">자동 시작 끄기</button><button class="btn" id="auto-start-close-btn" type="button">닫기</button></div>
     </div>
   </div>
   <script src="./dashboard-config.js"></script>
@@ -1129,7 +1180,24 @@ const SHEET_ID = '1_qIRbv44zWd9yv4yNzTQ0frXTvILl2-iejzPqhF8i2w';
 const SHEET_EDIT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
 // 시트에 새 행을 "쓰기"위한 구글 앱스크립트 웹앱 주소. 아래 안내에 따라 배포한 뒤,
 // 나온 URL(.../exec 로 끝남)을 여기에 붙여넣어야 대시보드에서 바로 추가하기가 동작합니다.
-const WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbzCnG_GceglJA6pFfxX5EzEIPEoHvhGK5gyfRHpe4nNNyNATXJi39QEWVOEAL_rC3Uc/exec';
+const WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbxGOJ4oPC2W1qqcger47LhvgDFhVuLLCBxoottOvT09pwp3-wyA91i6Yustckm7IG1Z/exec';
+const LEGACY_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbzyn9p3DK549jOjrNe6f3MgcO9K1RYTt747Wv-Ojo6hXR0Zzo6p3D0psEZfedhvsuyY/exec';
+const OLDER_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbzCnG_GceglJA6pFfxX5EzEIPEoHvhGK5gyfRHpe4nNNyNATXJi39QEWVOEAL_rC3Uc/exec';
+let ACTIVE_SHEET_ID = SHEET_ID;
+let ACTIVE_WRITE_API_URL = WRITE_API_URL;
+let ACTIVE_TIMETABLE_OFFICIAL_URL = 'http://comci.net:4082/th';
+let ACTIVE_WINDOWS_INSTALLER_URL = 'https://github.com/teacher9sgoo-max/gijang-teacher-helper/releases/latest';
+
+function applyActiveSiteConfig_(config){
+  config=config||{};
+  if(config.sheetId)ACTIVE_SHEET_ID=String(config.sheetId).trim();
+  if(config.writeApiUrl)ACTIVE_WRITE_API_URL=String(config.writeApiUrl).trim().replace(/\/$/,'');
+  if(config.timetableOfficialUrl)ACTIVE_TIMETABLE_OFFICIAL_URL=String(config.timetableOfficialUrl).trim();
+  if(config.windowsInstallerUrl)ACTIVE_WINDOWS_INSTALLER_URL=String(config.windowsInstallerUrl).trim();
+}
+function getActiveSiteConfig_(){return {sheetId:ACTIVE_SHEET_ID,writeApiUrl:ACTIVE_WRITE_API_URL,timetableOfficialUrl:ACTIVE_TIMETABLE_OFFICIAL_URL,windowsInstallerUrl:ACTIVE_WINDOWS_INSTALLER_URL};}
+function activeSheetEditUrl(){return `https://docs.google.com/spreadsheets/d/${ACTIVE_SHEET_ID}/edit`;}
+function activeWriteApiUrl(){return String(ACTIVE_WRITE_API_URL||WRITE_API_URL||'').trim().replace(/\/$/,'');}
 
 let masterPasswordForWrite = '';
 let editingCalendarRow = null;
@@ -1143,25 +1211,14 @@ function getMasterPasswordForWrite(){
   return masterPasswordForWrite;
 }
 async function postRowToSheet(sheetName, row, action='appendRow', rowNumber=null){
-  const writeApiUrl=getTimetableServerUrl();
-  if(!writeApiUrl){
-    return {success:false, error:'수정·삭제 전용 무료 서버 URL이 아직 설정되지 않았습니다. 회원 명부 관리에서 새 /exec 주소를 저장해주세요.'};
-  }
-  if(action==='updateRow' && (!Number.isInteger(rowNumber) || rowNumber<2)) return {success:false,error:'기존 행 번호를 찾지 못했습니다. 새 행을 추가하지 않고 작업을 취소했습니다.'};
-  if(currentRole!=='admin') return {success:false,error:'일정·안내사항·당번 수정은 마스터 관리자만 할 수 있습니다.'};
-  const adminPassword=getMasterPasswordForWrite();
-  if(!adminPassword) return {success:false,error:'마스터 비밀번호 확인이 필요합니다.'};
-  try{
-    const res = await fetch(writeApiUrl, {
-      method: 'POST',
-      headers: {'Content-Type':'text/plain;charset=utf-8'}, // preflight(OPTIONS) 회피용
-      body: JSON.stringify({action:action, sheet: sheetName, row: row, rowNumber:rowNumber, adminId:currentAccountId, adminPassword:adminPassword}),
-    });
-    const data = await res.json();
-    return data;
-  }catch(e){
-    return {success:false, error:'네트워크 오류로 저장하지 못했습니다.'};
-  }
+  const resource=sheetName==='학사일정'?'calendar':sheetName==='담임교사 전달사항'?'notice':sheetName==='급식당번'?'duty':'';
+  const account=(teacherAccounts||[]).find(function(a){return a.id===currentAccountId;});
+  const allowed=currentRole==='admin'||!!(account&&account.permissions&&account.permissions[resource]);
+  if(!resource)return {success:false,error:'지원하지 않는 저장 시트입니다.'};
+  if(!allowed)return {success:false,error:'이 항목의 수정 권한이 없습니다. 마스터 관리자에게 권한을 요청하세요.'};
+  if(action==='updateRow'&&(!Number.isInteger(rowNumber)||rowNumber<2))return {success:false,error:'기존 행 번호를 찾지 못했습니다. 새 행을 추가하지 않고 작업을 취소했습니다.'};
+  const mode=action==='updateRow'?'update':action==='deleteRow'?'delete':'append';
+  return postApp({action:'dashboardWrite',resource:resource,mode:mode,row:Array.isArray(row)?row:[],rowNumber:rowNumber,loginId:currentAccountId,password:currentLoginPassword});
 }
 /* ---------------- standalone login / Google Sheet member registry ---------------- */
 const USER_STORAGE_KEY = 'gijang_current_user_v1';
@@ -1193,11 +1250,14 @@ function buildTeacherAccounts(rows){
     const idCol=findCol('아이디','로그인');
     const pwCol=findCol('비밀번호','비번','패스워드');
     const nameCol=findCol('교사실명','실명','이름','교사명');
+    const roleCol=findCol('권한','역할','role');
     rows.slice(1).forEach(row=>{
       const id=String(row[idCol>-1?idCol:1]||'').trim();
       const password=String(row[pwCol>-1?pwCol:2]||'').trim();
       const name=String(row[nameCol>-1?nameCol:3]||id).trim();
-      if(id && password) parsed.push({id,password,name:name||id,role:id==='마스터'?'admin':'teacher'});
+      const roleText=String(row[roleCol>-1?roleCol:'']||'').trim().toLowerCase();
+      const isMaster=/^(마스터|master|admin|관리자)$/i.test(id)||/^(마스터|master|admin|관리자)$/i.test(name)||['admin','master','마스터','관리자'].includes(roleText);
+      if(id && password) parsed.push({id,password,name:name||id,role:isMaster?'admin':'teacher'});
     });
   }
   if(parsed.length){ teacherAccounts=parsed; teacherAccountsLoadedFromSheet=true; }
@@ -1252,11 +1312,13 @@ async function syncRemoteMemberList_(){
   }catch(error){ if(list) list.innerHTML=`<div class="empty-note">회원 명부 동기화 실패: ${escapeHtml(error.message||'알 수 없는 오류')}</div>`; }
 }
 function refreshMemberAccess(){
-  const isAdmin=currentRole==='admin';
+  const isAdmin=currentRole==='admin'||/^(마스터|master|admin|관리자)$/i.test(String(currentAccountId||''))||/^(마스터|master|admin|관리자)$/i.test(String(currentUser||''));
   const memberTab=document.getElementById('members-tab-btn');
   const cacheTab=document.getElementById('timetable-cache-tab-btn');
+  const permissionsTab=document.getElementById('permissions-tab-btn');
   if(memberTab) memberTab.style.display=isAdmin?'':'none';
   if(cacheTab) cacheTab.style.display=isAdmin?'':'none';
+  if(permissionsTab) permissionsTab.style.display=isAdmin?'':'none';
   // 일반 교사가 이전 주소·상태에서 캐시 탭을 보고 있었다면 대시보드로 되돌립니다.
   const cachePanel=document.getElementById('tab-timetable-cache');
   if(!isAdmin && cachePanel && cachePanel.classList.contains('active')){
@@ -1274,36 +1336,14 @@ async function completeLogin(){
   // 서버 왕복은 계정 목록이 아직 없거나 일치하는 계정이 없을 때만 사용합니다.
   const quickAccount=Array.isArray(teacherAccounts)?teacherAccounts.find(a=>a.id===id && a.password===pw):null;
   if(quickAccount){ establishLogin_(quickAccount,pw); return; }
-  if(teacherAccountsLoadedFromSheet){
-    errEl.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+  if(!teacherAccountsLoadedFromSheet){
+    // 교사 로그인은 구글 시트 ‘교사 아이디 비번’ 원본만 사용합니다.
+    // 시간표 서버는 인증에 관여하지 않으므로, 서버 지연이 로그인 실패로 보이지 않게 합니다.
+    errEl.textContent = '회원 명부를 불러오는 중입니다. 잠시 후 다시 시도하거나 새로고침하세요.';
     return;
   }
-  if(getTimetableServerUrl()){
-    errEl.textContent='회원 명부에서 로그인 정보를 확인하는 중입니다.';
-    try{
-      const data=await requestTimetableServer_({action:'login',id,password:pw});
-      if(!data || !data.ok) throw new Error((data&&data.error)||'아이디 또는 비밀번호가 올바르지 않습니다.');
-      serverSessionToken=data.token||'';
-      establishLogin_({id:data.user.id,name:data.user.name||data.user.id,role:data.user.role||'teacher'},pw);
-      return;
-    }catch(error){
-      // 새 서버를 배포하기 전에도 기본 마스터는 서버 URL 설정을 수정할 수 있게 유지합니다.
-      if(id==='마스터' && pw==='1234'){
-        serverSessionToken='';
-        establishLogin_({id:'마스터',name:'마스터',role:'admin'},pw);
-        errEl.textContent='';
-        alert('기본 마스터로 임시 로그인했습니다. 회원 명부 관리에서 새 /exec 주소를 저장한 뒤 웹 앱을 새 버전으로 배포하세요.');
-        return;
-      }
-      errEl.textContent=error.message||'회원 명부 서버 로그인에 실패했습니다.'; return;
-    }
-  }
-  const account = teacherAccounts.find(a=> a.id===id && a.password===pw);
-  if(!account){
-    errEl.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
-    return;
-  }
-  establishLogin_(account,pw);
+  errEl.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+  return;
 }
 function establishLogin_(account,pw){
   const errEl = document.getElementById('login-error');
@@ -1325,6 +1365,8 @@ function establishLogin_(account,pw){
   hideLoginModal();
   renderProgressLog();
   renderActivityLog();
+  hydratePersonalCloudRecords_();
+  syncPersonalRecordsFromServer_();
   // 로그인 직후에는 시간표가 아니라 대시보드를 먼저 보여줍니다.
   const dashboardTab=document.querySelector('nav.tabs button[data-tab="dashboard"]');
   if(dashboardTab) dashboardTab.click();
@@ -1385,12 +1427,15 @@ function initMemberManagement(){
   });
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{ showStatus('loading'); initMemberManagement(); loadAll(); initProgressTab(); initActivityTab(); window.setInterval(()=>{ if(!document.hidden) loadAll(); }, 30*60*1000); });
+document.addEventListener('DOMContentLoaded', ()=>{ showStatus('loading'); initMemberManagement(); loadAll(); initProgressTab(); initActivityTab(); document.getElementById('weekly-duty-sheet-open-btn')?.addEventListener('click',()=>window.open(activeSheetEditUrl(),'_blank','noopener')); window.setInterval(()=>{ if(!document.hidden) loadAll(); }, 30*60*1000); });
 
 let calendarEvents = {};
 let notices = [];
 let students = [];
 let dutyEntries = []; // {start,end,name}
+let weeklyDutyRotation = {baseMonday:null, activeGroup:0, groups:{1:[],2:[]}};
+let progressSheetRows = [];
+let activitySheetRows = [];
 
 /* 2026년 대한민국 공휴일 (대체공휴일 포함). 다른 연도는 자동 반영되지 않으니
    해가 바뀌면 이 목록을 업데이트해주세요. */
@@ -1484,7 +1529,7 @@ function fetchSheetRows(name){
         resolve(rows);
       }catch(e){ reject(e); }
     };
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(name)}&headers=1&tqx=out:json;responseHandler:${cbName}&_=${Date.now()}`;
+    const url = `https://docs.google.com/spreadsheets/d/${ACTIVE_SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(name)}&headers=1&tqx=out:json;responseHandler:${cbName}&_=${Date.now()}`;
     script = document.createElement('script');
     script.src = url;
     script.onerror = ()=>{
@@ -1500,7 +1545,7 @@ function renderTimetableCacheTab(rows=latestTimetableCacheRows, message=''){
   const summary=document.getElementById('tt-cache-summary');
   const results=document.getElementById('tt-cache-results');
   const sheetLink=document.getElementById('tt-cache-sheet-link');
-  if(sheetLink) sheetLink.href=`${SHEET_EDIT_URL}#gid=321142347`;
+  if(sheetLink) sheetLink.href=`${activeSheetEditUrl()}#gid=321142347`;
   if(!summary||!results) return;
   const safeRows=Array.isArray(rows)?rows:[];
   const data=safeRows.slice(1);
@@ -1612,6 +1657,54 @@ function buildDuty(rows){
   dutyEntries.sort((a,b)=> a.start.getTime()-b.start.getTime());
 }
 
+function buildWeeklyDutyRotation(rows){
+  weeklyDutyRotation={baseMonday:null,activeGroup:0,groups:{1:[],2:[]}};
+  if(!Array.isArray(rows)||rows.length<2)return;
+  let activeGroup=0;
+  rows.forEach(r=>{
+    const first=String(r&&r[0]||'').trim();
+    if(first==='기준 월요일')weeklyDutyRotation.baseMonday=parseDateFlexible(r[1]);
+    const groupMatch=first.match(/(?:\[?\s*)?([12])조/);
+    if(groupMatch && (!r[1]||String(r[1]).trim()==='')){activeGroup=Number(groupMatch[1]);return;}
+    if(!activeGroup || first==='업무' || !first)return;
+    const days=r.slice(1,6).map(v=>String(v||'').trim());
+    if(!days.some(Boolean))return;
+    const checked=String(r[6]||'').toUpperCase()==='TRUE';
+    weeklyDutyRotation.groups[activeGroup].push({task:first,days,checked});
+  });
+  const base=weeklyDutyRotation.baseMonday;
+  if(base){const now=new Date();const monday=new Date(now.getFullYear(),now.getMonth(),now.getDate());monday.setDate(monday.getDate()-((monday.getDay()+6)%7));const diff=Math.floor((monday-base)/(7*24*60*60*1000));weeklyDutyRotation.activeGroup=Math.abs(diff)%2===0?1:2;}
+}
+
+function renderWeeklyDutyRotation(){
+  const result=document.getElementById('weekly-duty-rotation-results');
+  const badge=document.getElementById('weekly-duty-rotation-badge');
+  const week=document.getElementById('weekly-duty-rotation-week');
+  if(!result||!badge||!week)return;
+  const group=weeklyDutyRotation.activeGroup;
+  const rows=group?weeklyDutyRotation.groups[group]:[];
+  if(!group||!rows.length){badge.textContent='표 없음';week.textContent='';result.className='rotation-duty-empty';result.textContent='구글 시트에서 ‘조별 당번표 관리 → 조별 반복 당번표 만들기’를 한 번 실행하면 이곳에 이번 주 당번표가 표시됩니다.';return;}
+  const now=new Date();const monday=new Date(now.getFullYear(),now.getMonth(),now.getDate());monday.setDate(monday.getDate()-((monday.getDay()+6)%7));const friday=new Date(monday);friday.setDate(monday.getDate()+4);
+  week.textContent=`${monday.getMonth()+1}/${monday.getDate()} ~ ${friday.getMonth()+1}/${friday.getDate()}`;
+  badge.textContent=`이번 주 ${group}조`;
+  result.className='';
+  const weekdayIndex=now.getDay();
+  const isWeekend=weekdayIndex===0||weekdayIndex===6;
+  const dutyIndex=isWeekend?0:weekdayIndex-1;
+  const dayNames=['월','화','수','목','금'];
+  const nextIsNextWeek=isWeekend||weekdayIndex===5;
+  const nextGroup=nextIsNextWeek?(group===1?2:1):group;
+  const nextRows=weeklyDutyRotation.groups[nextGroup]||[];
+  const nextDutyIndex=nextIsNextWeek?0:dutyIndex+1;
+  const dutyLabel=isWeekend?'다음 근무일(월) 당번':`오늘 ${dayNames[dutyIndex]}요일 당번`;
+  const nextLabel=nextIsNextWeek?'다음 주 월요일 당번':`다음 ${dayNames[nextDutyIndex]}요일 당번`;
+  const todayItems=rows.map(row=>({task:row.task,name:row.days[dutyIndex]||'-'}));
+  const nextItems=nextRows.map(row=>({task:row.task,name:row.days[nextDutyIndex]||'-'}));
+  const tableRows=isWeekend?nextRows:rows;
+  const highlightIndex=isWeekend?-1:dutyIndex;
+  result.innerHTML=`<div class="rotation-duty-brief-grid"><div class="rotation-duty-today"><div class="rotation-duty-today-label">${dutyLabel}</div><div class="rotation-duty-today-list">${todayItems.map(item=>`<span class="rotation-duty-today-item"><b>${escapeHtml(item.task)}</b>${escapeHtml(item.name)}</span>`).join('')}</div></div><div class="rotation-duty-next"><div class="rotation-duty-today-label">${nextLabel}<br>(${nextGroup}조)</div><div class="rotation-duty-today-list">${nextItems.map(item=>`<span class="rotation-duty-today-item"><b>${escapeHtml(item.task)}</b>${escapeHtml(item.name)}</span>`).join('')}</div></div></div><table class="rotation-duty-table"><thead><tr><th>업무</th>${dayNames.map((day,index)=>`<th class="${index===highlightIndex?'today-duty-head':''}">${day}</th>`).join('')}</tr></thead><tbody>${tableRows.map(row=>`<tr class="${row.checked?'checked':''}"><td>${escapeHtml(row.task)}</td>${row.days.map((name,index)=>`<td class="${index===highlightIndex?'today-duty-cell':''}">${escapeHtml(name||'-')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+
 function buildNotices(rows){
   notices = [];
   rows.slice(1).forEach((r,index)=>{
@@ -1651,21 +1744,31 @@ async function loadAll(){
     fetchSheetRows('급식당번'),
     fetchSheetRows('시간표 캐시'),
     fetchSheetRows('교사 아이디 비번'),
+    fetchSheetRows('조별 반복 당번표'),
+    fetchSheetRows('수업 진도'),
+    fetchSheetRows('학생 활동 기록'),
+    fetchSheetRows('교사 권한 관리'),
   ]);
   const rowsAt=index=>sheetResults[index]?.status==='fulfilled'&&Array.isArray(sheetResults[index].value)?sheetResults[index].value:[];
-  const failedSheets=sheetResults.map((r,i)=>r.status==='rejected'?['학사일정','담임교사 전달사항','전체 명렬표','급식당번','시간표 캐시','교사 아이디 비번'][i]:'').filter(Boolean);
+  const failedSheets=sheetResults.map((r,i)=>r.status==='rejected'?['학사일정','담임교사 전달사항','전체 명렬표','급식당번','시간표 캐시','교사 아이디 비번','조별 반복 당번표','수업 진도','학생 활동 기록','교사 권한 관리'][i]:'').filter(Boolean);
   buildCalendar(rowsAt(0));
   buildNotices(rowsAt(1));
   buildStudents(rowsAt(2));
   buildDuty(rowsAt(3));
   timetableRows=rowsAt(4);
   latestTimetableCacheRows=timetableRows;
-  buildTeacherAccounts(rowsAt(5));
+  buildTeacherAccounts(rowsAt(5), rowsAt(9));
+  buildWeeklyDutyRotation(rowsAt(6));
+  progressSheetRows=rowsAt(7);
+  activitySheetRows=rowsAt(8);
+  permissionSheetRows=rowsAt(9);
+  if(currentAccountId) hydratePersonalCloudRecords_();
   hideStatus();
   document.getElementById('sync-label').textContent = failedSheets.length ? `일부 자료 지연 · ${failedSheets.join(', ')}` : '마지막 업데이트 ' + new Date().toLocaleTimeString('ko-KR');
   renderCalendar();
   renderNotices();
   renderDuty();
+  renderWeeklyDutyRotation();
   buildTeacherTimetable(timetableRows);
   populateTeacherSelect();
   initAuth();
@@ -1686,7 +1789,7 @@ function showStatus(kind, msg){
   if(kind==='loading'){
     el.innerHTML = `<span class="spinner"></span> 구글 시트에서 데이터를 불러오는 중입니다...`;
   } else {
-    el.innerHTML = `⚠️ ${msg||'데이터를 불러오지 못했습니다.'} — 시트 공유 설정(링크가 있는 모든 사용자·뷰어)을 확인하거나 <a href="${SHEET_EDIT_URL}" target="_blank">시트 열기</a> 후 새로고침을 눌러주세요.`;
+    el.innerHTML = `⚠️ ${msg||'데이터를 불러오지 못했습니다.'} — 시트 공유 설정(링크가 있는 모든 사용자·뷰어)을 확인하거나 <a href="${activeSheetEditUrl()}" target="_blank">시트 열기</a> 후 새로고침을 눌러주세요.`;
   }
 }
 function hideStatus(){ document.getElementById('status-banner').style.display='none'; }
@@ -1744,14 +1847,17 @@ document.getElementById('qa-cal-submit').addEventListener('click', async ()=>{
   const weekdayLabel = d ? WEEKDAY_KO[d.getDay()] : '';
   statusEl.className='quickadd-status'; statusEl.textContent='저장 중...';
   const isEdit=Number.isInteger(editingCalendarRow) && editingCalendarRow>=2;
-  const result = await postRowToSheet('학사일정', [dateVal, weekdayLabel, title, detail], isEdit?'updateRow':'appendRow', editingCalendarRow);
+  const pendingRow=[dateVal, weekdayLabel, title, detail];
+  if(isEdit){applyLocalDashboardMutation_('학사일정',editingCalendarRow,pendingRow,'update');statusEl.className='quickadd-status';statusEl.textContent='화면에 먼저 반영했습니다. 서버에 저장 중...';}
+  const result = await postRowToSheet('학사일정', pendingRow, isEdit?'updateRow':'appendRow', editingCalendarRow);
   if(result.success){
     statusEl.className='quickadd-status ok'; statusEl.textContent=isEdit?'수정했습니다!':'저장했습니다!';
     editingCalendarRow=null; document.getElementById('qa-cal-submit').textContent='저장';
     document.getElementById('qa-cal-title').value=''; document.getElementById('qa-cal-detail').value='';
-    await loadAll();
-    setTimeout(()=>{ document.getElementById('qa-cal-form').classList.remove('show'); statusEl.textContent=''; }, 900);
+    if(!isEdit)await loadAll();
+    document.getElementById('qa-cal-form').classList.remove('show'); statusEl.textContent='';
   } else {
+    if(isEdit)await loadAll();
     statusEl.className='quickadd-status err'; statusEl.textContent = result.error || '저장에 실패했습니다.';
   }
 });
@@ -1767,14 +1873,17 @@ document.getElementById('qa-notice-submit').addEventListener('click', async ()=>
   }
   statusEl.className='quickadd-status'; statusEl.textContent='저장 중...';
   const isEdit=Number.isInteger(editingNoticeRow) && editingNoticeRow>=2;
-  const result = await postRowToSheet('담임교사 전달사항', [start, end, grade==='전체'?'전체':grade+'학년', content], isEdit?'updateRow':'appendRow', editingNoticeRow);
+  const pendingRow=[start, end, grade==='전체'?'전체':grade+'학년', content];
+  if(isEdit){applyLocalDashboardMutation_('담임교사 전달사항',editingNoticeRow,pendingRow,'update');statusEl.className='quickadd-status';statusEl.textContent='화면에 먼저 반영했습니다. 서버에 저장 중...';}
+  const result = await postRowToSheet('담임교사 전달사항', pendingRow, isEdit?'updateRow':'appendRow', editingNoticeRow);
   if(result.success){
     statusEl.className='quickadd-status ok'; statusEl.textContent=isEdit?'수정했습니다!':'저장했습니다!';
     editingNoticeRow=null; document.getElementById('qa-notice-submit').textContent='저장';
     document.getElementById('qa-notice-content').value='';
-    await loadAll();
-    setTimeout(()=>{ document.getElementById('qa-notice-form').classList.remove('show'); statusEl.textContent=''; }, 900);
+    if(!isEdit)await loadAll();
+    document.getElementById('qa-notice-form').classList.remove('show'); statusEl.textContent='';
   } else {
+    if(isEdit)await loadAll();
     statusEl.className='quickadd-status err'; statusEl.textContent = result.error || '저장에 실패했습니다.';
   }
 });
@@ -1810,10 +1919,29 @@ function toInputDate(value){
   const d=stripTime(value);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+function applyLocalDashboardMutation_(sheet,rowNumber,row,mode){
+  const n=Number(rowNumber);if(!Number.isInteger(n)||n<2)return;
+  if(sheet==='학사일정'){
+    let found=null,oldKey='';
+    Object.keys(calendarEvents||{}).some(function(key){const list=calendarEvents[key]||[];const index=list.findIndex(function(item){return Number(item.row)===n;});if(index<0)return false;found=list[index];oldKey=key;if(mode==='delete')list.splice(index,1);else{found.date=parseDateFlexible(row[0])||found.date;found.title=String(row[2]||'');found.detail=String(row[3]||'');}return true;});
+    if(found&&mode!=='delete'){const newKey=found.date?dateKey(found.date):oldKey;if(newKey!==oldKey){calendarEvents[oldKey]=(calendarEvents[oldKey]||[]).filter(function(item){return item!==found;});if(!calendarEvents[newKey])calendarEvents[newKey]=[];calendarEvents[newKey].push(found);}}
+    renderCalendar();
+  }else if(sheet==='담임교사 전달사항'){
+    const found=(notices||[]).find(function(item){return Number(item.row)===n;});
+    if(found){if(mode==='delete'){notices=notices.filter(function(item){return item!==found;});}else{found.start=parseDateFlexible(row[0])||found.start;found.end=parseDateFlexible(row[1])||found.end;found.grade=String(row[2]||'전체').replace('학년','')==='전체'?'all':String(row[2]||'').replace('학년','');found.text=String(row[3]||'');}renderNotices();}
+  }
+}
 async function deleteDashboardRow(sheet,rowNumber,label){
   if(!confirm(`${label} 항목을 삭제할까요?`)) return;
+  applyLocalDashboardMutation_(sheet,rowNumber,[],'delete');
   const result=await postRowToSheet(sheet,[], 'deleteRow', rowNumber);
-  if(result.success){ await loadAll(); alert('삭제했습니다.'); } else alert(result.error||'삭제에 실패했습니다.');
+  if(result.success){
+    document.getElementById('day-modal').classList.remove('show');
+    document.getElementById('qa-cal-form').classList.remove('show');
+    document.getElementById('qa-notice-form').classList.remove('show');
+    editingCalendarRow=null; editingNoticeRow=null;
+    alert(`${label}이 삭제되었습니다.\n서버에도 저장되었습니다.`);
+  } else { await loadAll(); alert((result.error||'삭제에 실패했습니다.')+'\n화면을 원래대로 복구했습니다.'); }
 }
 function startCalendarEdit(event,date){
   editingCalendarRow=event.row;
@@ -2492,16 +2620,104 @@ document.getElementById('group-word-btn').addEventListener('click', ()=>{
 /* ---------------- lesson progress (수업 진도) — stored in this browser's localStorage ---------------- */
 const PROG_STORE_KEY_BASE = 'gijang_progress_log_v1';
 function progStoreKey(){
-  const user = currentUser || '_guest';
+  const user = currentAccountId || currentUser || '_guest';
   return `${PROG_STORE_KEY_BASE}::${user}`;
 }
 function loadProgressStore(){
-  try{ return JSON.parse(localStorage.getItem(progStoreKey()) || '{}'); }catch(e){ return {}; }
+  try{
+    const key=progStoreKey();
+    const current=JSON.parse(localStorage.getItem(key)||'{}');
+    const legacyKey=`${PROG_STORE_KEY_BASE}::${currentUser||'_guest'}`;
+    if(currentAccountId && legacyKey!==key){
+      const legacy=JSON.parse(localStorage.getItem(legacyKey)||'{}');
+      Object.keys(legacy).forEach(k=>{if(!current[k])current[k]=[];const known=new Set(current[k].map(v=>String(v.recordId||`${v.date}|${v.content}|${v.memo||''}`)));legacy[k].forEach(v=>{const id=String(v.recordId||`${v.date}|${v.content}|${v.memo||''}`);if(!known.has(id)){current[k].push(v);known.add(id);}});});
+    }
+    return current;
+  }catch(e){ return {}; }
 }
 function saveProgressStore(store){
   try{ localStorage.setItem(progStoreKey(), JSON.stringify(store)); }catch(e){ /* storage unavailable */ }
 }
 function progKey(grade,cls,subject){ return `${grade}|${cls}|${subject}`; }
+
+function sheetColumnIndex_(rows, labels){
+  if(!Array.isArray(rows)||!rows.length)return -1;
+  const headers=(rows[0]||[]).map(value=>String(value||'').replace(/\s+/g,'').trim());
+  return headers.findIndex(header=>labels.some(label=>header===String(label).replace(/\s+/g,'')));
+}
+function mergeRemoteRecords_(store, key, records){
+  if(!store[key])store[key]=[];
+  const seen=new Set(store[key].map(item=>String(item.recordId||`${item.date}|${item.content}|${item.memo||''}`)));
+  records.forEach(record=>{const id=String(record.recordId||`${record.date}|${record.content}|${record.memo||''}`);if(!seen.has(id)){store[key].push(record);seen.add(id);}});
+  store[key].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+}
+async function syncPersonalRecordsFromServer_(){
+  const url=String(getTimetableServerUrl()||'').trim();
+  if(!url||!currentAccountId||!currentLoginPassword)return false;
+  try{
+    const response=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'personalRecords',loginId:currentAccountId,password:currentLoginPassword})});
+    const data=await response.json();
+    if(!data||!data.success)throw new Error(data&&data.error||'서버 기록을 불러오지 못했습니다.');
+    progressSheetRows=Array.isArray(data.progress)?data.progress:[];
+    activitySheetRows=Array.isArray(data.activity)?data.activity:[];
+    hydratePersonalCloudRecords_();
+    renderProgressLog();renderActivityLog();
+    return true;
+  }catch(error){
+    const message='서버 기록 복원 실패: '+(error.message||'연결 오류');
+    const p=document.getElementById('prog-sync-status'),a=document.getElementById('act-sync-status');
+    if(p){p.className='quickadd-status err';p.textContent=message;}
+    if(a){a.className='quickadd-status err';a.textContent=message;}
+    return false;
+  }
+}
+
+function hydratePersonalCloudRecords_(){
+  if(!currentAccountId)return;
+  let progressAdded=0,activityAdded=0;
+  const progressTeacherCol=sheetColumnIndex_(progressSheetRows,['교사아이디','교사 아이디']);
+  if(progressTeacherCol>=0){
+    const d=sheetColumnIndex_(progressSheetRows,['기록일','날짜']),g=sheetColumnIndex_(progressSheetRows,['학년']),c=sheetColumnIndex_(progressSheetRows,['반']),s=sheetColumnIndex_(progressSheetRows,['교과','과목']),content=sheetColumnIndex_(progressSheetRows,['진도내용','진도']),memo=sheetColumnIndex_(progressSheetRows,['비고']),id=sheetColumnIndex_(progressSheetRows,['기록ID','기록Id']);
+    const store=loadProgressStore();
+    progressSheetRows.slice(1).filter(row=>String(row[progressTeacherCol]||'').trim()===String(currentAccountId)).forEach(row=>{const key=progKey(String(row[g]||''),String(row[c]||''),String(row[s]||''));const before=(store[key]||[]).length;mergeRemoteRecords_(store,key,[{recordId:String(row[id]||''),date:String(row[d]||''),grade:String(row[g]||''),cls:String(row[c]||''),subject:String(row[s]||''),content:String(row[content]||''),memo:String(row[memo]||''),synced:true}]);if((store[key]||[]).length>before)progressAdded++;});
+    saveProgressStore(store);
+  }
+  const activityTeacherCol=sheetColumnIndex_(activitySheetRows,['교사아이디','교사 아이디']);
+  if(activityTeacherCol>=0){
+    const d=sheetColumnIndex_(activitySheetRows,['기록일','날짜']),g=sheetColumnIndex_(activitySheetRows,['학년']),c=sheetColumnIndex_(activitySheetRows,['반']),no=sheetColumnIndex_(activitySheetRows,['번호','학생번호']),content=sheetColumnIndex_(activitySheetRows,['활동내용','내용']),memo=sheetColumnIndex_(activitySheetRows,['비고']),id=sheetColumnIndex_(activitySheetRows,['기록ID','기록Id']);
+    const store=loadActivityStore();
+    activitySheetRows.slice(1).filter(row=>String(row[activityTeacherCol]||'').trim()===String(currentAccountId)).forEach(row=>{const key=actKey(String(row[g]||''),String(row[c]||''),String(row[no]||''));const before=(store[key]||[]).length;mergeRemoteRecords_(store,key,[{recordId:String(row[id]||''),date:String(row[d]||''),grade:String(row[g]||''),cls:String(row[c]||''),studentNo:String(row[no]||''),content:String(row[content]||''),memo:String(row[memo]||''),synced:true}]);if((store[key]||[]).length>before)activityAdded++;});
+    saveActivityStore(store);
+  }
+  if(progressAdded||activityAdded){
+    const message=`구글 시트에서 내 기록을 불러왔습니다. 수업 진도 ${progressAdded}건 · 학생 활동 ${activityAdded}건`;
+    const progStatus=document.getElementById('prog-sync-status'),actStatus=document.getElementById('act-sync-status');
+    if(progStatus){progStatus.className='quickadd-status ok';progStatus.textContent=message;}
+    if(actStatus){actStatus.className='quickadd-status ok';actStatus.textContent=message;}
+    renderProgressLog();renderActivityLog();
+  }
+}
+
+async function syncProgressRecordToSheet_(record){
+  const status=document.getElementById('prog-sync-status');
+  const url=String(window.GIJANG_PROGRESS_WRITE_URL||getTimetableServerUrl()||'').trim();
+  if(!url){if(status){status.className='quickadd-status';status.textContent='이 기기에 저장했습니다. 시트 동기화 주소가 설정되지 않았습니다.';}return false;}
+  const payload={action:'progressAppend',record,loginId:currentAccountId||'',password:currentLoginPassword||'',token:window.GIJANG_PROGRESS_WRITE_TOKEN||''};
+  const body=JSON.stringify(payload);
+  try{
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body});
+    const data=await res.json();
+    if(!data||!data.success)throw new Error(data&&data.error||'시트 저장에 실패했습니다.');
+    if(status){status.className='quickadd-status ok';status.textContent='기기와 구글 시트에 수업 진도를 저장했습니다.';}return true;
+  }catch(error){
+    try{
+      const sent=navigator.sendBeacon ? navigator.sendBeacon(url,new Blob([body],{type:'text/plain;charset=UTF-8'})) : false;
+      if(sent){if(status){status.className='quickadd-status ok';status.textContent='기기에 저장했고 구글 시트로 전송했습니다. 잠시 후 시트를 새로고침해 확인하세요.';}return true;}
+    }catch(beaconError){}
+    if(status){status.className='quickadd-status err';status.textContent=`기기에는 저장했지만 시트 전송에 실패했습니다: ${error.message||'연결 오류'}`;}
+    return false;
+  }
+}
 
 let progGrade = null;
 function initProgressTab(){
@@ -2525,7 +2741,7 @@ function initProgressTab(){
   const today = new Date();
   dateInput.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
-  document.getElementById('prog-add-btn').addEventListener('click', ()=>{
+  document.getElementById('prog-add-btn').addEventListener('click', async ()=>{
     const cls = document.getElementById('prog-class-select').value;
     const subjectSel = document.getElementById('prog-subject-select').value;
     const subject = subjectSel==='__custom' ? document.getElementById('prog-subject-custom').value.trim() : subjectSel;
@@ -2536,12 +2752,17 @@ function initProgressTab(){
     const store = loadProgressStore();
     const key = progKey(progGrade, cls, subject);
     if(!store[key]) store[key] = [];
-    store[key].unshift({
-      date: dateInput.value.trim(),
-      content,
-      memo: document.getElementById('prog-memo').value.trim(),
-    });
+    const record={
+      recordId:`prog-${currentAccountId||'teacher'}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+      date:dateInput.value.trim(), grade:progGrade, cls, subject, content,
+      memo:document.getElementById('prog-memo').value.trim(),
+      teacherId:currentAccountId||'', teacherName:currentUser||''
+    };
+    store[key].unshift(record);
     saveProgressStore(store);
+    const syncStatus=document.getElementById('prog-sync-status');
+    if(syncStatus){syncStatus.className='quickadd-status';syncStatus.textContent='기기에 저장했습니다. 구글 시트에 전송하는 중...';}
+    await syncProgressRecordToSheet_(record);
     document.getElementById('prog-content').value = '';
     document.getElementById('prog-memo').value = '';
     renderProgressLog();
@@ -2615,41 +2836,71 @@ function renderProgressLog(){
   const cls = document.getElementById('prog-class-select').value;
   const subjectSel = document.getElementById('prog-subject-select').value;
   const subject = subjectSel==='__custom' ? document.getElementById('prog-subject-custom').value.trim() : subjectSel;
-  if(!progGrade || !cls || !subject){
-    resultsEl.innerHTML = '<div class="result-empty">학년·반·교과를 선택하면 기록이 표시됩니다.</div>';
-    return;
-  }
   const store = loadProgressStore();
-  const key = progKey(progGrade, cls, subject);
-  const entries = store[key] || [];
+  const hasFilter=!!(progGrade||cls||subject);
+  const entries=Object.keys(store).flatMap(function(key){return (store[key]||[]).map(function(entry,index){return Object.assign({},entry,{__storeKey:key,__storeIndex:index});});}).filter(function(entry){
+    return (!progGrade||String(entry.grade||'')===String(progGrade))&&(!cls||String(entry.cls||'')===String(cls))&&(!subject||String(entry.subject||'')===String(subject));
+  }).sort(function(a,b){
+    const groupA=[String(a.grade||''),String(a.cls||''),String(a.subject||'')].join('|');
+    const groupB=[String(b.grade||''),String(b.cls||''),String(b.subject||'')].join('|');
+    return groupA.localeCompare(groupB,'ko',{numeric:true})||String(b.date||'').localeCompare(String(a.date||''));
+  });
   if(!entries.length){
-    resultsEl.innerHTML = `<div class="result-empty">${progGrade}학년 ${cls} · ${escapeHtml(subject)} 기록이 아직 없습니다.<br>왼쪽에서 첫 기록을 추가해보세요.</div>`;
+    resultsEl.innerHTML = `<div class="result-empty">${hasFilter?`${progGrade?progGrade+'학년 ':''}${cls?cls+' · ':''}${subject?escapeHtml(subject)+' ':''}기록이 아직 없습니다.`:'저장된 수업 진도가 아직 없습니다.'}<br>왼쪽에서 첫 기록을 추가해보세요.</div>`;
     return;
   }
   resultsEl.innerHTML = `<div class="progress-log" id="progress-log-list"></div>`;
   const list = document.getElementById('progress-log-list');
+  let previousGroup='';
   entries.forEach((e, i)=>{
+    const groupKey=[String(e.grade||''),String(e.cls||''),String(e.subject||'')].join('|');
+    if(groupKey!==previousGroup){
+      const heading=document.createElement('div');
+      heading.className='progress-group-heading';
+      const headingClass=[e.grade?`${escapeHtml(e.grade)}학년`:'',e.cls?escapeHtml(String(e.cls).replace(/학년/g,'')):''].filter(Boolean).join(' ');
+      heading.innerHTML=`<strong>${headingClass||'반 미지정'}</strong><span>·</span><strong>${e.subject?escapeHtml(e.subject):'교과 미지정'}</strong>`;
+      list.appendChild(heading);
+      previousGroup=groupKey;
+    }
     const div = document.createElement('div');
     div.className = 'progress-entry';
     div.style.animationDelay = (i*0.03)+'s';
+    const classLabel=[e.grade?`${escapeHtml(e.grade)}학년`:'',e.cls?escapeHtml(String(e.cls).replace(/학년/g,'')):''].filter(Boolean).join(' ');
+    const courseLabel=e.subject?escapeHtml(e.subject):'교과 미지정';
     div.innerHTML = `
       <div class="pe-top">
         <span class="pe-date">${escapeHtml(e.date||'')}</span>
         <button class="pe-del" data-i="${i}" title="삭제">✕</button>
       </div>
+      <div class="pe-meta"><b>${classLabel||'반 미지정'}</b><span>·</span><b>${courseLabel}</b></div>
       <div class="pe-content">${escapeHtml(e.content)}</div>
       ${e.memo ? `<div class="pe-memo">${escapeHtml(e.memo)}</div>` : ''}
     `;
     list.appendChild(div);
   });
   list.querySelectorAll('.pe-del').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
+    btn.addEventListener('click', async ()=>{
       const i = parseInt(btn.dataset.i,10);
-      if(!confirm('이 기록을 정말 삭제할까요? 삭제하면 되돌릴 수 없어요.')) return;
+      const entry=entries[i];
+      if(!entry||!confirm('이 기록을 정말 삭제할까요? 삭제하면 되돌릴 수 없어요.')) return;
       const store2 = loadProgressStore();
-      store2[key].splice(i,1);
+      const removed=(store2[entry.__storeKey]||[]).splice(entry.__storeIndex,1)[0];
       saveProgressStore(store2);
+      const deletedCard=btn.closest('.progress-entry');
+      if(deletedCard)deletedCard.remove();
       renderProgressLog();
+      const url=String(getTimetableServerUrl()||'').trim();
+      if(!entry.recordId||!url)return;
+      try{
+        const response=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'personalRecordDelete',kind:'progress',recordId:entry.recordId,loginId:currentAccountId,password:currentLoginPassword})});
+        const data=await response.json();
+        if(!data||!data.success)throw new Error(data&&data.error||'서버 삭제에 실패했습니다.');
+        alert('수업 진도 기록이 삭제되었습니다.');
+      }catch(error){
+        if(!store2[entry.__storeKey])store2[entry.__storeKey]=[];
+        store2[entry.__storeKey].splice(Math.min(entry.__storeIndex,store2[entry.__storeKey].length),0,removed);
+        saveProgressStore(store2);renderProgressLog();alert('서버 삭제에 실패해 기록을 복구했습니다.\\n'+(error.message||'연결 오류'));
+      }
     });
   });
 }
@@ -2791,10 +3042,12 @@ function openTeacherTimetableDefault(){
 
 function getTimetableServerUrl(){
   try{
-    const saved=(localStorage.getItem(TIMETABLE_SERVER_URL_KEY)||'').trim().replace(/\/$/,'');
+    let saved=(localStorage.getItem(TIMETABLE_SERVER_URL_KEY)||'').trim().replace(/\/$/,'');
+    const legacyUrls=[LEGACY_WRITE_API_URL,OLDER_WRITE_API_URL].map(function(url){return String(url||'').trim().replace(/\/$/,'');});
+    if(legacyUrls.includes(saved))saved='';
     const configured=String(window.GIJANG_TIMETABLE_SERVER_URL||'').trim().replace(/\/$/,'');
-    return saved||configured||String(WRITE_API_URL||'').trim().replace(/\/$/,'');
-  }catch(e){return String(window.GIJANG_TIMETABLE_SERVER_URL||WRITE_API_URL||'').trim().replace(/\/$/,'');}
+    return saved||configured||activeWriteApiUrl();
+  }catch(e){return String(window.GIJANG_TIMETABLE_SERVER_URL||activeWriteApiUrl()).trim().replace(/\/$/,'');}
 }
 function requestTimetableServer_(params){
   return new Promise((resolve,reject)=>{
@@ -2871,7 +3124,7 @@ function loadOfficialTimetableFrame(){
   const empty = document.getElementById('official-viewer-empty');
   const note = document.getElementById('official-frame-note');
   if(!frame) return;
-  frame.src = OFFICIAL_TIMETABLE_URL;
+  frame.src = ACTIVE_TIMETABLE_OFFICIAL_URL || OFFICIAL_TIMETABLE_URL;
   frame.classList.add('show');
   if(empty) empty.style.display = 'none';
   if(note) note.classList.add('show');
@@ -2919,7 +3172,7 @@ function initOfficialTimetableViewer(){
 
   if(openBtn) openBtn.addEventListener('click', async ()=>{
     const copied = await copyOfficialSchoolCode();
-    window.open(OFFICIAL_TIMETABLE_URL, '_blank', 'noopener');
+    window.open(ACTIVE_TIMETABLE_OFFICIAL_URL || OFFICIAL_TIMETABLE_URL, '_blank', 'noopener');
     setOfficialTimetableStatus(copied ? '학교코드 75378이 복사되었습니다. 새 창의 학교코드 칸에 붙여넣고 설정을 눌러주세요.' : '새 창에서 학교코드 75378을 입력하고 설정을 눌러주세요.', copied ? 'ok' : '');
   });
   if(loadBtn) loadBtn.addEventListener('click', loadOfficialTimetableFrame);
@@ -3208,9 +3461,18 @@ function renderClassTimetable(){
 
 /* ---------------- student activity log (학생 활동 기록) — per-teacher, per-student ---------------- */
 const ACT_STORE_KEY_BASE = 'gijang_activity_log_v1';
-function actStoreKey(){ return `${ACT_STORE_KEY_BASE}::${currentUser || '_guest'}`; }
+function actStoreKey(){ return `${ACT_STORE_KEY_BASE}::${currentAccountId || currentUser || '_guest'}`; }
 function loadActivityStore(){
-  try{ return JSON.parse(localStorage.getItem(actStoreKey()) || '{}'); }catch(e){ return {}; }
+  try{
+    const key=actStoreKey();
+    const current=JSON.parse(localStorage.getItem(key)||'{}');
+    const legacyKey=`${ACT_STORE_KEY_BASE}::${currentUser||'_guest'}`;
+    if(currentAccountId && legacyKey!==key){
+      const legacy=JSON.parse(localStorage.getItem(legacyKey)||'{}');
+      Object.keys(legacy).forEach(k=>{if(!current[k])current[k]=[];const known=new Set(current[k].map(v=>String(v.recordId||`${v.date}|${v.content}|${v.memo||''}`)));legacy[k].forEach(v=>{const id=String(v.recordId||`${v.date}|${v.content}|${v.memo||''}`);if(!known.has(id)){current[k].push(v);known.add(id);}});});
+    }
+    return current;
+  }catch(e){ return {}; }
 }
 function saveActivityStore(store){
   try{ localStorage.setItem(actStoreKey(), JSON.stringify(store)); }catch(e){ /* storage unavailable */ }
@@ -3220,12 +3482,23 @@ async function syncActivityRecordToSheet_(record){
   const status=document.getElementById('act-sync-status');
   const url=String(window.GIJANG_ACTIVITY_WRITE_URL||getTimetableServerUrl()||'').trim();
   if(!url){if(status){status.className='quickadd-status';status.textContent='이 기기에 저장했습니다. 시트 동기화 주소가 설정되지 않았습니다.';}return false;}
+  const payload={action:'activityAppend',record,loginId:currentAccountId||'',password:currentLoginPassword||'',token:window.GIJANG_ACTIVITY_WRITE_TOKEN||''};
+  const body=JSON.stringify(payload);
   try{
-    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'activityAppend',record,loginId:currentAccountId||'',password:currentLoginPassword||'',token:window.GIJANG_ACTIVITY_WRITE_TOKEN||''})});
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body});
     const data=await res.json();
     if(!data||!data.success)throw new Error(data&&data.error||'시트 저장에 실패했습니다.');
     if(status){status.className='quickadd-status ok';status.textContent='기기와 구글 시트에 저장했습니다.';}return true;
-  }catch(error){if(status){status.className='quickadd-status err';status.textContent=`기기에는 저장했지만 시트 저장 실패: ${error.message||'연결 오류'}`;}return false;}
+  }catch(error){
+    // Apps Script 웹앱의 교차 출처 응답을 브라우저가 읽지 못해도, 같은 기록 ID로 전송을 한 번 더 시도합니다.
+    // 서버는 기록 ID 중복을 무시하므로 이미 저장된 기록이 중복 생성되지 않습니다.
+    try{
+      const sent=navigator.sendBeacon ? navigator.sendBeacon(url,new Blob([body],{type:'text/plain;charset=UTF-8'})) : false;
+      if(sent){if(status){status.className='quickadd-status ok';status.textContent='기기에 저장했고 구글 시트로 전송했습니다. 잠시 후 시트를 새로고침해 확인하세요.';}return true;}
+    }catch(beaconError){}
+    if(status){status.className='quickadd-status err';status.textContent=`기기에는 저장했지만 시트 전송에 실패했습니다: ${error.message||'연결 오류'}`;}
+    return false;
+  }
 }
 
 let actGrade = null;
@@ -3273,15 +3546,22 @@ function initActivityTab(){
     const store = loadActivityStore();
     const key = actKey(actGrade, cls, studentNo);
     if(!store[key]) store[key] = [];
-    store[key].unshift({
+    const record={
+      recordId: `act-${currentAccountId||'teacher'}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
       date: dateInput.value.trim(),
+      grade: actGrade,
+      cls,
+      studentNo,
       content,
       memo: document.getElementById('act-memo').value.trim(),
-    });
+      teacherId: currentAccountId||'',
+      teacherName: currentUser||''
+    };
+    store[key].unshift(record);
     saveActivityStore(store);
     const syncStatus=document.getElementById('act-sync-status');
-    if(syncStatus){syncStatus.className='quickadd-status';syncStatus.textContent='이 기기에 저장했습니다. 시트 동기화 준비 중...';}
-    await syncActivityRecordToSheet_({date:dateInput.value.trim(),grade:actGrade,cls,studentNo,content,memo:document.getElementById('act-memo').value.trim(),teacherId:currentAccountId||'',teacherName:currentUser||''});
+    if(syncStatus){syncStatus.className='quickadd-status';syncStatus.textContent='기기에 저장했습니다. 구글 시트에 전송하는 중...';}
+    await syncActivityRecordToSheet_(record);
     document.getElementById('act-content').value = '';
     document.getElementById('act-memo').value = '';
     renderActivityLog();
@@ -3723,13 +4003,15 @@ function shuffle(arr){
 }
 /* ---------------- installable web app / Windows startup helper ---------------- */
 let deferredPwaInstallPrompt=null;
-function getWindowsInstallerUrl(){return String(window.GIJANG_WINDOWS_INSTALLER_URL||'https://github.com/teacher9sgoo-max/gijang-teacher-helper/releases/latest').trim();}
+function getWindowsInstallerUrl(){return String(ACTIVE_WINDOWS_INSTALLER_URL||window.GIJANG_WINDOWS_INSTALLER_URL||'https://github.com/teacher9sgoo-max/gijang-teacher-helper/releases/latest').trim();}
 function downloadWindowsStartupShortcut(){
   const target=getWindowsInstallerUrl();
   window.open(target,'_blank','noopener');
 }
 function openPwaHelp(){const m=document.getElementById('pwa-help-modal');if(m)m.classList.add('show');}
 function closePwaHelp(){const m=document.getElementById('pwa-help-modal');if(m)m.classList.remove('show');}
+function openAutoStartHelp(){const m=document.getElementById('auto-start-modal');if(m)m.classList.add('show');}
+function closeAutoStartHelp(){const m=document.getElementById('auto-start-modal');if(m)m.classList.remove('show');}
 async function setDesktopAutoStart_(enabled){
   if(!window.electronAPI||typeof window.electronAPI.setAutoLaunch!=='function'){alert('자동 시작 제어는 Windows EXE 설치 앱에서만 사용할 수 있습니다. 먼저 EXE를 설치해 주세요.');return false;}
   try{await window.electronAPI.setAutoLaunch(Boolean(enabled));alert(enabled?'Windows 시작 시 자동 실행을 켰습니다.':'Windows 시작 시 자동 실행을 껐습니다.');return true;}
@@ -3747,16 +4029,297 @@ async function shareGijangApp(){
   const shareBtn=document.getElementById('pwa-share-btn');
   if(shareBtn)shareBtn.addEventListener('click',shareGijangApp);
   if(installBtn)installBtn.addEventListener('click',()=>openPwaHelp());
-  if(startupBtn)startupBtn.addEventListener('click',openPwaHelp);
+  if(startupBtn)startupBtn.addEventListener('click',openAutoStartHelp);
   document.getElementById('pwa-help-close-btn')?.addEventListener('click',closePwaHelp);
+  document.getElementById('auto-start-close-btn')?.addEventListener('click',closeAutoStartHelp);
   document.getElementById('pwa-startup-download-btn')?.addEventListener('click',downloadWindowsStartupShortcut);
   document.getElementById('pwa-autostart-on-btn')?.addEventListener('click',()=>setDesktopAutoStart_(true));
   document.getElementById('pwa-autostart-off-btn')?.addEventListener('click',()=>setDesktopAutoStart_(false));
   document.getElementById('pwa-help-modal')?.addEventListener('click',e=>{if(e.target.id==='pwa-help-modal')closePwaHelp();});
+  document.getElementById('auto-start-modal')?.addEventListener('click',e=>{if(e.target.id==='auto-start-modal')closeAutoStartHelp();});
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPwaInstallPrompt=e;if(installBtn)installBtn.hidden=false;});
   window.addEventListener('appinstalled',()=>{if(installBtn)installBtn.hidden=true;});
   if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 })();
-</script>
+  </script>
+  <script>
+/* 교사별 수정 권한·개인 설정 확장 — 기존 index.html 뒤에 로드 */
+(function(){
+  'use strict';
+  const PREF_BASE='gijang_teacher_preferences_v1';
+  let originalBuildTeacherAccounts=buildTeacherAccounts;
+  let permissionSheetRows=[];
+  let permissionListMode='source';
+  let permissionSearchText='';
+  let originalEstablishLogin=establishLogin_;
+  let originalOpenDayModal=openDayModal;
+  let originalRenderNotices=renderNotices;
+  let originalLoadAll=loadAll;
+
+  function isMasterUser(){return ['admin','master','관리자','마스터'].indexOf(String(currentRole||'').trim().toLowerCase())>=0||/^(마스터|master|admin|관리자)$/i.test(String(currentAccountId||'').trim())||/^(마스터|master|admin|관리자)$/i.test(String(currentUser||'').trim())||!!((teacherAccounts||[]).find(function(a){return a.id===currentAccountId&&['admin','master','관리자','마스터'].indexOf(String(a.role||'').trim().toLowerCase())>=0;}));}
+  function permissionFor(key){
+    const account=(teacherAccounts||[]).find(function(a){return a.id===currentAccountId;});
+    return isMasterUser()||!!(account&&account.permissions&&account.permissions[key]);
+  }
+  function prefsKey(){return PREF_BASE+'::'+(currentAccountId||'guest');}
+  function preferences(){try{return Object.assign({dutyAlert:true,calendarAlert:false,noticeAlert:false},JSON.parse(localStorage.getItem(prefsKey())||'{}'));}catch(e){return {dutyAlert:true,calendarAlert:false,noticeAlert:false};}}
+  function savePreferences(values){localStorage.setItem(prefsKey(),JSON.stringify(values));}
+  function asBool(v){return ['1','true','허용','yes','y','on'].indexOf(String(v||'').trim().toLowerCase())>=0;}
+
+  buildTeacherAccounts=function(rows, permissionRows){
+    originalBuildTeacherAccounts(rows);
+    if(!Array.isArray(rows)||!rows.length)return;
+    const sourceRows=Array.isArray(permissionRows)&&permissionRows.length?permissionRows:permissionSheetRows;
+    const header=sourceRows.length?sourceRows[0].map(function(v){return String(v||'').trim();}):rows[0].map(function(v){return String(v||'').trim();});
+    const data=sourceRows.length?sourceRows:rows;
+    const find=function(label){return header.findIndex(function(h){return h.replace(/\s/g,'').includes(label);});};
+    const idIndex=find('아이디');
+    const cal=find('학사일정수정'), notice=find('전달사항수정'), duty=find('급식당번수정'), nameIndex=find('교사실명');
+    teacherAccounts.forEach(function(account){
+      const row=data.slice(1).find(function(item){return String(item[idIndex>=0?idIndex:header.findIndex(function(h){return /아이디|로그인/.test(h);})]||'').trim()===account.id;});
+      if(!row)return;
+      if(nameIndex>=0&&row[nameIndex])account.name=String(row[nameIndex]).trim();
+      account.permissions={calendar:account.role==='admin'||(cal>=0&&asBool(row[cal])),notice:account.role==='admin'||(notice>=0&&asBool(row[notice])),duty:account.role==='admin'||(duty>=0&&asBool(row[duty]))};
+    });
+    if(typeof isMasterUser==='function' && isMasterUser()){
+      updateMasterPermissionTab();
+      if(document.getElementById('tab-permissions')?.classList.contains('active')) renderMasterPermissions();
+    }
+  };
+
+  async function postApp(payload){
+  const url=activeWriteApiUrl()||getTimetableServerUrl();
+    if(!url) return {success:false,error:'Apps Script 웹앱 주소가 없습니다. 마스터가 회원 명부 관리에서 /exec 주소를 먼저 저장하세요.'};
+    try{
+      const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+      return await res.json();
+    }catch(e){return {success:false,error:'네트워크 오류로 저장하지 못했습니다.'};}
+  }
+  postRowToSheet=async function(sheetName,row,action,rowNumber){
+    const resource=sheetName==='학사일정'?'calendar':(sheetName==='담임교사 전달사항'?'notice':'');
+    if(!resource)return {success:false,error:'기존 급식 당번표 대신 내 설정의 조별 반복 급식 당번표를 사용하세요.'};
+    const allowed=resource==='calendar'?permissionFor('calendar'):permissionFor('notice');
+    if(!allowed)return {success:false,error:'이 항목의 수정 권한이 없습니다. 마스터 관리자에게 권한을 요청하세요.'};
+    const mode=action==='updateRow'?'update':action==='deleteRow'?'delete':'append';
+    return postApp({action:'dashboardWrite',resource:resource,mode:mode,row:row,rowNumber:rowNumber,loginId:currentAccountId,password:currentLoginPassword});
+  };
+
+  function injectCss(){
+    const style=document.createElement('style');
+    style.textContent='.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.settings-grid .card{padding:22px}.settings-grid h3{margin-top:0}.setting-option{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);font-size:14px}.setting-option:last-child{border:0}.setting-option input{width:18px;height:18px;accent-color:var(--accent)}.permissions-table{width:100%;border-collapse:collapse}.permissions-table th,.permissions-table td{padding:10px 8px;border-bottom:1px solid var(--border);text-align:left;font-size:14px}.permissions-table th{color:var(--text-soft)}.permissions-table input{width:18px;height:18px;accent-color:var(--accent)}.duty-edit-table{width:100%;border-collapse:collapse;min-width:680px}.duty-edit-table th,.duty-edit-table td{border:1px solid var(--border);padding:5px;background:#fffdf6}.duty-edit-table input{width:100%;min-width:72px;padding:7px;border:0;background:transparent}.duty-edit-scroll{overflow:auto}.settings-message{font-size:13px;min-height:20px;margin-top:10px}.settings-message.ok{color:#266649}.settings-message.err{color:#9d3e2b}.permission-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0}.permission-toolbar input{flex:1;min-width:220px;border:1px solid var(--border);border-radius:9px;padding:10px 11px;font:inherit;background:#fff}@media(max-width:760px){.settings-grid{grid-template-columns:1fr}}';
+    document.head.appendChild(style);
+  }
+  function openPersonalSettings(){
+    document.querySelectorAll('nav.tabs button').forEach(function(x){x.classList.remove('active');});
+    document.querySelectorAll('section.tab').forEach(function(x){x.classList.remove('active');});
+    const panel=document.getElementById('tab-settings');if(panel)panel.classList.add('active');
+    renderSettings();
+  }
+  function openPermissionsTab(){
+    document.querySelectorAll('nav.tabs button').forEach(function(x){x.classList.remove('active');});
+    const tab=document.querySelector('nav.tabs button[data-tab="permissions"]');if(tab)tab.classList.add('active');
+    document.querySelectorAll('section.tab').forEach(function(x){x.classList.remove('active');});
+    const panel=document.getElementById('tab-permissions');if(panel)panel.classList.add('active');
+    renderMasterPermissions();
+  }
+  function injectSettings(){
+    const nav=document.querySelector('nav.tabs');
+    const members=nav&&nav.querySelector('[data-tab="members"]');
+    if(nav&&!nav.querySelector('[data-tab="permissions"]')){
+      const b=document.createElement('button');b.dataset.tab='permissions';b.id='permissions-tab-btn';b.style.display='none';b.textContent='교사 작성 및 접근 권한';
+      nav.insertBefore(b,members||null);b.addEventListener('click',openPermissionsTab);
+    }
+    if(!document.getElementById('tab-settings')){
+      const section=document.createElement('section');section.className='tab';section.id='tab-settings';
+      section.innerHTML='<div class="section-title"><div><h2>내 설정</h2><p>비밀번호, 접속 알림과 나에게 허용된 수정 권한을 관리합니다.</p></div></div><div id="settings-content"></div>';
+      const modal=document.getElementById('day-modal');modal.parentNode.insertBefore(section,modal);
+    }
+    if(!document.getElementById('tab-permissions')){
+      const section=document.createElement('section');section.className='tab';section.id='tab-permissions';
+      section.innerHTML='<div class="section-title"><div><h2>교사 작성 및 접근 권한</h2><p>교사 계정을 확인하고, 교사별로 학사일정·담임교사 전달사항·조별 반복 급식 당번표의 작성 권한을 제어합니다.</p></div></div><div id="master-permissions-area"></div>';
+      const modal=document.getElementById('day-modal');modal.parentNode.insertBefore(section,modal);
+    }
+  }
+  function settingRow(id,title,text){return '<label class="setting-option"><input type="checkbox" id="'+id+'"><span><b>'+title+'</b><br><small>'+text+'</small></span></label>';}
+  function updateDashboardEditControls(){
+    const calendar=permissionFor('calendar'), notice=permissionFor('notice'), duty=permissionFor('duty');
+    const calToggle=document.getElementById('qa-cal-toggle'),noticeToggle=document.getElementById('qa-notice-toggle'),dutyToggle=document.getElementById('weekly-duty-sheet-open-btn');
+    if(calToggle)calToggle.style.display=calendar?'':'none';
+    if(noticeToggle)noticeToggle.style.display=notice?'':'none';
+    if(dutyToggle)dutyToggle.style.display=duty?'':'none';
+    if(!calendar){const f=document.getElementById('qa-cal-form');if(f)f.classList.remove('show');}
+    if(!notice){const f=document.getElementById('qa-notice-form');if(f)f.classList.remove('show');}
+    if(!duty){const f=document.getElementById('weekly-duty-edit-form');if(f)f.classList.remove('show');}
+  }
+  function renderSettings(){
+    const root=document.getElementById('settings-content');if(!root)return;
+    updateDashboardEditControls();
+    const p=preferences();
+    root.innerHTML='<div class="settings-grid"><article class="card"><h3>개인 계정 설정</h3><p class="progress-note">현재 로그인 계정의 비밀번호와 알림 방식을 변경합니다.</p><label class="field">현재 비밀번호<input id="my-current-password" type="password" autocomplete="current-password"></label><label class="field">새 비밀번호<input id="my-new-password" type="password" minlength="4" autocomplete="new-password"></label><label class="field">새 비밀번호 확인<input id="my-new-password-confirm" type="password" minlength="4" autocomplete="new-password"></label><button class="btn primary" id="my-password-save" type="button">비밀번호 변경</button><div id="my-password-status" class="settings-message"></div></article><article class="card"><h3>접속 알림</h3>'+settingRow('pref-duty-alert','오늘 급식 당번 알림','접속 시 오늘 내가 담당한 급식 당번이 있으면 팝업으로 알려줍니다.')+settingRow('pref-calendar-alert','오늘 학사일정 알림','접속 시 오늘의 학사일정이 있으면 알려줍니다.')+settingRow('pref-notice-alert','담임 전달사항 알림','접속 시 현재 적용 중인 담임교사 전달사항이 있으면 알려줍니다.')+'<button class="btn primary" id="my-pref-save" type="button" style="margin-top:14px">알림 설정 저장</button><div id="my-pref-status" class="settings-message"></div></article></div><div id="duty-settings-area"></div>';
+    document.getElementById('pref-duty-alert').checked=p.dutyAlert!==false;document.getElementById('pref-calendar-alert').checked=!!p.calendarAlert;document.getElementById('pref-notice-alert').checked=!!p.noticeAlert;
+    document.getElementById('my-pref-save').onclick=function(){savePreferences({dutyAlert:document.getElementById('pref-duty-alert').checked,calendarAlert:document.getElementById('pref-calendar-alert').checked,noticeAlert:document.getElementById('pref-notice-alert').checked});const s=document.getElementById('my-pref-status');s.className='settings-message ok';s.textContent='이 기기의 알림 설정을 저장했습니다.';};
+    document.getElementById('my-password-save').onclick=changeMyPassword;
+    renderDutySettings();
+  }
+  async function changeMyPassword(){
+    const current=document.getElementById('my-current-password').value,newPw=document.getElementById('my-new-password').value,confirmPw=document.getElementById('my-new-password-confirm').value,status=document.getElementById('my-password-status');
+    if(!current||newPw.length<4||newPw!==confirmPw){status.className='settings-message err';status.textContent='현재 비밀번호와 4자 이상의 동일한 새 비밀번호를 입력하세요.';return;}
+    status.className='settings-message';status.textContent='변경 중...';
+    const result=await postApp({action:'passwordChange',loginId:currentAccountId,currentPassword:current,newPassword:newPw});
+    if(result.success){currentLoginPassword=newPw;try{const stored=JSON.parse(localStorage.getItem(USER_STORAGE_KEY)||'{}');if(stored.id===currentAccountId){stored.password=newPw;localStorage.setItem(USER_STORAGE_KEY,JSON.stringify(stored));}}catch(e){}status.className='settings-message ok';status.textContent='비밀번호를 변경했습니다. 다음 로그인부터 새 비밀번호를 사용하세요.';document.getElementById('my-current-password').value='';document.getElementById('my-new-password').value='';document.getElementById('my-new-password-confirm').value='';}else{status.className='settings-message err';status.textContent=result.error||'비밀번호를 변경하지 못했습니다.';}
+  }
+  function renderDutySettings(){
+    const root=document.getElementById('weekly-duty-edit-form');if(!root)return;
+    if(!permissionFor('duty')){root.innerHTML='';return;}
+    root.innerHTML='<div class="quickadd-row" style="align-items:end"><div><label class="qa-inline">수정할 조</label><select id="duty-edit-group"><option value="1">1조</option><option value="2">2조</option></select></div><div class="progress-note" style="margin:0">조별 반복 당번표 시트에 바로 저장됩니다.</div></div><div class="duty-edit-scroll" style="margin-top:10px"><table class="duty-edit-table"><thead><tr><th>업무</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th></tr></thead><tbody id="duty-edit-body"></tbody></table></div><div class="quickadd-actions" style="margin-top:12px"><button class="btn primary" id="duty-edit-save" type="button">저장</button><button class="btn" id="duty-edit-cancel" type="button">취소</button></div><div id="duty-edit-status" class="settings-message"></div>';
+    const select=document.getElementById('duty-edit-group');select.value=String(weeklyDutyRotation.activeGroup||1);select.onchange=renderDutyEditRows;document.getElementById('duty-edit-save').onclick=saveDutyEdit;document.getElementById('duty-edit-cancel').onclick=function(){root.classList.remove('show');};renderDutyEditRows();
+  }
+  function toggleDutyEditor(){const root=document.getElementById('weekly-duty-edit-form');if(!root||!permissionFor('duty'))return;renderDutySettings();root.classList.toggle('show');}
+  function renderDutyEditRows(){const group=Number(document.getElementById('duty-edit-group').value);const rows=(weeklyDutyRotation.groups[group]||[]).slice(0,5);const body=document.getElementById('duty-edit-body');body.innerHTML=Array.from({length:5},function(_,i){const r=rows[i]||{task:'업무 '+(i+1),days:['','','','','']};return '<tr><td><input data-duty-task value="'+escapeHtml(r.task||'')+'"></td>'+[0,1,2,3,4].map(function(d){return '<td><input data-duty-day="'+d+'" value="'+escapeHtml((r.days||[])[d]||'')+'"></td>';}).join('')+'</tr>';}).join('');}
+  async function saveDutyEdit(){const group=Number(document.getElementById('duty-edit-group').value), status=document.getElementById('duty-edit-status'),rows=Array.from(document.querySelectorAll('#duty-edit-body tr')).map(function(tr){return {task:tr.querySelector('[data-duty-task]').value,days:Array.from(tr.querySelectorAll('[data-duty-day]')).map(function(el){return el.value;})};});status.className='settings-message';status.textContent='시트에 저장 중...';const result=await postApp({action:'dutyRotationSave',group:group,rows:rows,loginId:currentAccountId,password:currentLoginPassword});if(result.success){status.className='settings-message ok';status.textContent='조별 반복 당번표를 저장했습니다.';await loadAll();}else{status.className='settings-message err';status.textContent=result.error||'당번표를 저장하지 못했습니다.';}}
+  function renderMasterPermissions(){
+    const root=document.getElementById('master-permissions-area');if(!root)return;
+    let teachers=(teacherAccounts||[]).filter(function(a){return a.role!=='admin';});
+    if(permissionListMode==='name')teachers.sort(function(a,b){return String(a.name||a.id).localeCompare(String(b.name||b.id),'ko',{numeric:true});});
+    const query=String(permissionSearchText||'').trim().toLowerCase();
+    if(query)teachers=teachers.filter(function(a){return String(a.name||'').toLowerCase().includes(query)||String(a.id||'').toLowerCase().includes(query);});
+    const total=(teacherAccounts||[]).filter(function(a){return a.role!=='admin';}).length;
+    root.innerHTML='<article class="card" style="margin-top:18px"><h3>교사별 수정 권한</h3><p class="progress-note">체크한 권한만 해당 교사에게 표시됩니다. 저장하면 `교사 권한 관리` 시트에 반영됩니다.</p><div class="permission-toolbar"><input id="permission-teacher-search" type="search" placeholder="교사 이름 또는 아이디 검색" value="'+escapeHtml(permissionSearchText)+'"><button class="btn '+(permissionListMode==='name'?'primary':'')+'" id="permission-sort-name" type="button">이름순 정렬</button><button class="btn '+(permissionListMode==='source'?'primary':'')+'" id="permission-sort-source" type="button">기존 방식 보기</button></div><div class="progress-note" style="margin:8px 0">표시 중: '+teachers.length+'명 / 전체 '+total+'명</div><div style="overflow:auto"><table class="permissions-table"><thead><tr><th>교사</th><th>학사일정 추가</th><th>안내사항 추가</th><th>급식 당번 수정</th><th></th></tr></thead><tbody>'+(teachers.length?teachers.map(function(a,i){const q=a.permissions||{};return '<tr data-perm-id="'+escapeHtml(a.id)+'"><td><b>'+escapeHtml(a.name||a.id)+'</b><br><small>'+escapeHtml(a.id)+'</small></td><td><input type="checkbox" data-perm="calendar" '+(q.calendar?'checked':'')+'></td><td><input type="checkbox" data-perm="notice" '+(q.notice?'checked':'')+'></td><td><input type="checkbox" data-perm="duty" '+(q.duty?'checked':'')+'></td><td><button class="btn" data-save-perm="'+i+'" type="button">저장</button></td></tr>';}).join(''):'<tr><td colspan="5" class="progress-note">검색 결과가 없습니다.</td></tr>')+'</tbody></table></div><div id="permissions-status" class="settings-message"></div></article>';
+    const search=root.querySelector('#permission-teacher-search');if(search){let composing=false,timer=null;search.addEventListener('compositionstart',function(){composing=true;});search.addEventListener('compositionend',function(){composing=false;permissionSearchText=search.value;renderMasterPermissions();});search.addEventListener('input',function(){permissionSearchText=search.value;if(composing)return;clearTimeout(timer);timer=setTimeout(function(){renderMasterPermissions();},180);});}
+    root.querySelector('#permission-sort-name')?.addEventListener('click',function(){permissionListMode='name';renderMasterPermissions();});
+    root.querySelector('#permission-sort-source')?.addEventListener('click',function(){permissionListMode='source';renderMasterPermissions();});
+    root.querySelectorAll('[data-save-perm]').forEach(function(button){button.onclick=async function(){const tr=button.closest('tr'),status=document.getElementById('permissions-status'),permissions={};tr.querySelectorAll('[data-perm]').forEach(function(x){permissions[x.dataset.perm]=x.checked;});button.disabled=true;status.className='settings-message';status.textContent='권한을 저장 중입니다...';const result=await postApp({action:'permissionUpdate',targetId:tr.dataset.permId,permissions:permissions,loginId:currentAccountId,password:currentLoginPassword});button.disabled=false;if(result.success){const target=(teacherAccounts||[]).find(function(a){return a.id===tr.dataset.permId;});if(target)target.permissions=permissions;status.className='settings-message ok';status.textContent='권한을 저장했습니다. 해당 교사가 다음 로그인 또는 새로고침 후 적용됩니다.';alert('권한 저장 완료\\n'+(target?target.name||target.id:tr.dataset.permId)+' 교사의 권한이 저장되었습니다.');}else{const reason=result.error||'권한을 저장하지 못했습니다.';status.className='settings-message err';status.textContent=reason;alert('권한 저장 실패\\n'+reason);}};});
+  }
+  function showAlerts(){
+    const p=preferences(); const message=[];const today=new Date();const dow=today.getDay()-1;
+    if(p.dutyAlert&&dow>=0&&dow<=4){const g=weeklyDutyRotation.activeGroup,rows=g?(weeklyDutyRotation.groups[g]||[]):[];const names=rows.map(function(r){return (r.days||[])[dow]||'';}).filter(function(name){return String(name).replace(/\s/g,'').includes(String(currentUser||'').replace(/\s/g,''));});if(names.length)message.push('오늘은 '+g+'조 급식 당번입니다.');}
+    if(p.calendarAlert){const todays=(events||[]).filter(function(ev){const d=parseDateFlexible(ev.date);return d&&dateKey(d)===dateKey(today);});if(todays.length)message.push('오늘 학사일정: '+todays.map(function(x){return x.title||x.detail;}).join(', '));}
+    if(p.noticeAlert){const live=(notices||[]).filter(function(n){return (!n.start||stripTime(n.start)<=stripTime(today))&&(!n.end||stripTime(n.end)>=stripTime(today));});if(live.length)message.push('현재 담임 전달사항 '+live.length+'건이 있습니다.');}
+    const key='gijang_login_alert_seen::'+(currentAccountId||'')+'::'+dateKey(today);if(message.length&&!sessionStorage.getItem(key)){sessionStorage.setItem(key,'1');setTimeout(function(){alert(message.join('\n'));},350);}
+  }
+  function updateMasterPermissionTab(){const tab=document.getElementById('permissions-tab-btn');if(tab)tab.style.display=isMasterUser()?'':'none';}
+  establishLogin_=function(account,pw){originalEstablishLogin(account,pw);setTimeout(function(){updateMasterPermissionTab();renderSettings();showAlerts();},250);};
+  openDayModal=function(date,evs,holiday){originalOpenDayModal(date,evs,holiday);if(!permissionFor('calendar'))return;const body=document.getElementById('day-modal-body');let eventIndex=0;body.querySelectorAll('.event-row').forEach(function(row){if(row.querySelector('.holiday-title'))return;const ev=evs[eventIndex++];if(!ev||!ev.row||row.querySelector('.member-actions'))return;const actions=document.createElement('div');actions.className='member-actions';actions.style.marginTop='8px';const edit=document.createElement('button');edit.className='btn';edit.textContent='수정';edit.onclick=function(){startCalendarEdit(ev,date);};const del=document.createElement('button');del.className='btn danger';del.textContent='삭제';del.onclick=function(){deleteDashboardRow('학사일정',ev.row,'학사일정');};actions.append(edit,del);row.appendChild(actions);});};
+  renderNotices=function(){
+    originalRenderNotices();
+    if(!permissionFor('notice'))return;
+    const today=stripTime(new Date());
+    ['1','2','3'].forEach(function(g){
+      const forThisGrade=(notices||[]).filter(function(n){return (!n.start||today>=stripTime(n.start))&&(!n.end||today<=stripTime(n.end))&&(n.grade==='all'||n.grade===g);}).sort(function(a,b){return (a.end?a.end.getTime():Infinity)-(b.end?b.end.getTime():Infinity);});
+      const items=document.querySelectorAll('#notice-col-'+g+' .notice-item');
+      items.forEach(function(div,index){
+        const n=forThisGrade[index];
+        if(!n||!n.row)return;
+        let actions=div.querySelector('.notice-edit-actions');
+        if(!actions){
+          actions=document.createElement('div');actions.className='member-actions notice-edit-actions';actions.style.marginTop='7px';actions.style.display='none';
+          const edit=document.createElement('button');edit.className='btn';edit.type='button';edit.textContent='수정';edit.onclick=function(e){e.stopPropagation();startNoticeEdit(n);};
+          const del=document.createElement('button');del.className='btn danger';del.type='button';del.textContent='삭제';del.onclick=function(e){e.stopPropagation();deleteDashboardRow('담임교사 전달사항',n.row,'담임교사 전달사항');};
+          actions.append(edit,del);div.appendChild(actions);
+        }
+        div.style.cursor='pointer';div.title='클릭하면 수정·삭제 버튼이 표시됩니다.';
+        div.onclick=function(e){if(e.target.closest('button'))return;actions.style.display=actions.style.display==='none'?'flex':'none';};
+      });
+    });
+  };
+  loadAll=async function(){const result=await originalLoadAll();if(currentAccountId){updateMasterPermissionTab();renderSettings();if(isMasterUser()&&document.getElementById('tab-permissions')?.classList.contains('active'))renderMasterPermissions();showAlerts();}return result;};
+  document.addEventListener('DOMContentLoaded',function(){
+    const originalButton=document.getElementById('weekly-duty-sheet-open-btn');
+    if(originalButton){
+      const button=originalButton.cloneNode(true); originalButton.replaceWith(button);
+      button.textContent='+ 급식 당번 수정';
+      button.addEventListener('click',toggleDutyEditor);
+    }
+    document.getElementById('personal-settings-btn')?.addEventListener('click',openPersonalSettings);
+    updateMasterPermissionTab();
+    updateDashboardEditControls();
+  });
+  injectCss();injectSettings();
+})();
+  </script>
 </body>
 </html>
+
+
+<!-- 마스터 전용 사이트 설정 변경 화면 -->
+<script>
+(function(){
+  'use strict';
+  const SITE_CONFIG_LOCAL_KEY='gijang_site_config_v1';
+  function configMaster(){
+    const role=String(typeof currentRole!=='undefined'?currentRole:'').trim().toLowerCase();
+    const id=String(typeof currentAccountId!=='undefined'?currentAccountId:(typeof currentUser!=='undefined'?currentUser:'' )).trim();
+    return ['admin','master','관리자','마스터'].indexOf(role)>=0 || /^(admin|master|관리자|마스터)$/i.test(id);
+  }
+  function siteConfigRequest_(url){
+    return new Promise(function(resolve,reject){
+      const cb='gijangSiteConfigCb_'+Date.now()+'_'+Math.floor(Math.random()*100000);
+      const script=document.createElement('script');
+      const timer=setTimeout(function(){cleanup();reject(new Error('사이트 설정 서버 응답 시간이 초과되었습니다.'));},10000);
+      function cleanup(){clearTimeout(timer);delete window[cb];if(script.parentNode)script.parentNode.removeChild(script);}
+      window[cb]=function(data){cleanup();data&&data.success?resolve(data):reject(new Error(data&&data.error||'사이트 설정을 불러오지 못했습니다.'));};
+      script.onerror=function(){cleanup();reject(new Error('사이트 설정 서버에 연결하지 못했습니다.'));};
+      script.src=url+(url.indexOf('?')>=0?'&':'?')+'action=siteConfigGet&callback='+encodeURIComponent(cb)+'&_='+Date.now();
+      document.head.appendChild(script);
+    });
+  }
+  function setSiteConfig_(config){
+    config=config||{};
+    if(typeof applyActiveSiteConfig_==='function')applyActiveSiteConfig_(config);
+    if(config.timetableServerUrl){try{localStorage.setItem(TIMETABLE_SERVER_URL_KEY,config.timetableServerUrl);}catch(e){}}
+    try{localStorage.setItem(SITE_CONFIG_LOCAL_KEY,JSON.stringify(config));}catch(e){}
+  }
+  async function loadSiteConfig_(){
+    try{
+      const base=activeWriteApiUrl();
+      if(!base)return;
+      const result=await siteConfigRequest_(base);
+      if(result&&result.config){setSiteConfig_(result.config);if(typeof loadAll==='function')loadAll();}
+    }catch(error){
+      try{const saved=JSON.parse(localStorage.getItem(SITE_CONFIG_LOCAL_KEY)||'{}');if(saved.sheetId||saved.writeApiUrl)setSiteConfig_(saved);}catch(e){}
+    }
+  }
+  function siteSettingsNav_(){
+    if(!configMaster())return;
+    const nav=document.querySelector('nav.tabs');
+    if(!nav)return;
+    let button=nav.querySelector('[data-tab="site-config"]');
+    if(!button){button=document.createElement('button');button.type='button';button.dataset.tab='site-config';button.textContent='⚙️ 사이트 설정';nav.appendChild(button);}
+    button.style.display='';
+    button.onclick=function(){
+      nav.querySelectorAll('button').forEach(function(b){b.classList.remove('active');});button.classList.add('active');
+      document.querySelectorAll('section.tab').forEach(function(s){s.classList.remove('active');});
+      const section=document.getElementById('tab-site-config');if(section)section.classList.add('active');renderSiteSettings_();
+    };
+  }
+  function ensureSiteSettings_(){
+    if(document.getElementById('tab-site-config'))return;
+    const section=document.createElement('section');section.className='tab';section.id='tab-site-config';
+    section.innerHTML='<div class="section-title"><div><h2>⚙️ 사이트 설정 변경</h2><p>마스터만 스프레드시트·Apps Script·시간표·설치파일 링크를 변경할 수 있습니다.</p></div></div><div id="site-config-content"></div>';
+    const modal=document.getElementById('day-modal');if(modal&&modal.parentNode)modal.parentNode.insertBefore(section,modal);else document.body.appendChild(section);
+  }
+  function field_(id,label,value,placeholder){return '<label class="field"><b>'+label+'</b><input id="'+id+'" type="url" value="'+String(value||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" placeholder="'+(placeholder||'')+'"></label>';}
+  function renderSiteSettings_(){
+    if(!configMaster())return;
+    const root=document.getElementById('site-config-content');if(!root)return;
+    const activeCfg=typeof getActiveSiteConfig_==='function'?getActiveSiteConfig_():{};const cfg={sheetId:activeCfg.sheetId||SHEET_ID,writeApiUrl:activeCfg.writeApiUrl||WRITE_API_URL,timetableOfficialUrl:activeCfg.timetableOfficialUrl||OFFICIAL_TIMETABLE_URL,timetableServerUrl:localStorage.getItem(TIMETABLE_SERVER_URL_KEY)||'',windowsInstallerUrl:activeCfg.windowsInstallerUrl||getWindowsInstallerUrl()};
+    root.innerHTML='<article class="card settings-grid" style="display:block;max-width:780px">'+field_('site-sheet-id','스프레드시트 ID 또는 전체 주소',cfg.sheetId,'https://docs.google.com/spreadsheets/d/...')+field_('site-write-url','Apps Script 웹앱 /exec 주소',cfg.writeApiUrl,'https://script.google.com/macros/s/.../exec')+field_('site-timetable-url','컴시간 공식 링크',cfg.timetableOfficialUrl,'http://comci.net:4082/th')+field_('site-timetable-server-url','시간표 서버 주소(선택)',cfg.timetableServerUrl,'https://.../exec')+field_('site-installer-url','Windows 설치파일 링크',cfg.windowsInstallerUrl,'https://github.com/.../releases/latest')+'<div class="quickadd-actions" style="margin-top:14px"><button class="btn primary" id="site-config-save" type="button">사이트 설정 저장</button><button class="btn" id="site-config-reload" type="button">현재 설정 다시 불러오기</button></div><div id="site-config-status" class="settings-message"></div></article>';
+    document.getElementById('site-config-save').onclick=saveSiteSettings_;
+    document.getElementById('site-config-reload').onclick=function(){loadSiteConfig_().then(renderSiteSettings_);};
+  }
+  async function saveSiteSettings_(){
+    const status=document.getElementById('site-config-status');
+    const cfg={sheetId:document.getElementById('site-sheet-id').value.trim(),writeApiUrl:document.getElementById('site-write-url').value.trim(),timetableOfficialUrl:document.getElementById('site-timetable-url').value.trim(),timetableServerUrl:document.getElementById('site-timetable-server-url').value.trim(),windowsInstallerUrl:document.getElementById('site-installer-url').value.trim()};
+    if(!cfg.sheetId||!cfg.writeApiUrl||!cfg.timetableOfficialUrl||!cfg.windowsInstallerUrl){status.className='settings-message err';status.textContent='필수 주소를 모두 입력하세요.';return;}
+    status.className='settings-message';status.textContent='저장 중입니다...';
+    try{
+      const res=await fetch(activeWriteApiUrl(),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'siteConfigUpdate',loginId:currentAccountId,password:currentLoginPassword,config:cfg})});
+      const data=await res.json();if(!data.success)throw new Error(data.error||'저장에 실패했습니다.');
+      setSiteConfig_(data.config);status.className='settings-message ok';status.textContent='사이트 설정이 저장되었습니다. 이후 새로고침부터 적용됩니다.';renderSiteSettings_();
+    }catch(error){status.className='settings-message err';status.textContent=error.message||'사이트 설정 저장에 실패했습니다.';}
+  }
+  document.addEventListener('DOMContentLoaded',function(){ensureSiteSettings_();siteSettingsNav_();loadSiteConfig_();});
+  const timer=setInterval(function(){if(configMaster()){ensureSiteSettings_();siteSettingsNav_();}},1000);setTimeout(function(){clearInterval(timer);},30000);
+  window.renderSiteSettings_=renderSiteSettings_;window.loadSiteConfig_=loadSiteConfig_;
+})();
+</script>
