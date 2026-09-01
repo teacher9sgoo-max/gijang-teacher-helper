@@ -1114,7 +1114,12 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
     <h3>기장중학교 교무 도우미</h3>
     <p class="login-sub">교사 아이디와 비밀번호를 입력하세요. 마스터 계정은 회원 명부를 관리할 수 있습니다.</p>
     <input type="text" id="login-id-input" placeholder="아이디" maxlength="30" autocomplete="username">
-    <input type="password" id="login-pw-input" placeholder="비밀번호" maxlength="30" autocomplete="current-password">
+    <div class="login-pw-wrap" style="position:relative">
+      <input type="password" id="login-pw-input" placeholder="비밀번호" maxlength="30" autocomplete="current-password" style="width:100%;box-sizing:border-box;padding-right:40px">
+      <button type="button" id="login-pw-toggle" aria-label="비밀번호 보이기" title="비밀번호 보이기" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;cursor:pointer;padding:6px;line-height:0;color:#6b786e">
+        <svg id="login-pw-toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+      </button>
+    </div>
     <div class="login-error" id="login-error"></div>
     <label class="check-row login-remember"><input type="checkbox" id="login-remember-check" checked> 이 기기에서 자동 로그인 유지</label>
     <label class="check-row login-remember" id="login-autostart-row"><input type="checkbox" id="login-autostart-check" checked> 컴퓨터 켜질 때 자동으로 실행 (데스크톱 앱에서만 적용)</label>
@@ -1373,6 +1378,19 @@ function establishLogin_(account,pw){
 document.getElementById('login-submit-btn').addEventListener('click', completeLogin);
 document.getElementById('login-id-input').addEventListener('keydown', (e)=>{ if(e.key==='Enter') document.getElementById('login-pw-input').focus(); });
 document.getElementById('login-pw-input').addEventListener('keydown', (e)=>{ if(e.key==='Enter') completeLogin(); });
+document.getElementById('login-pw-toggle').addEventListener('click', ()=>{
+  const pwInput=document.getElementById('login-pw-input');
+  const icon=document.getElementById('login-pw-toggle-icon');
+  const btn=document.getElementById('login-pw-toggle');
+  const showing = pwInput.type==='text';
+  pwInput.type = showing ? 'password' : 'text';
+  btn.title = showing ? '비밀번호 보이기' : '비밀번호 숨기기';
+  btn.setAttribute('aria-label', btn.title);
+  icon.innerHTML = showing
+    ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle>'
+    : '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.6 20.6 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a20.7 20.7 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><path d="M1 1l22 22"></path>';
+  pwInput.focus();
+});
 document.getElementById('switch-user-btn').addEventListener('click', ()=>{
   try{ localStorage.removeItem(USER_STORAGE_KEY); }catch(e){}
   currentUser=null; currentLoginPassword=''; currentAccountId=null; currentRole='teacher'; masterPasswordForWrite='';
