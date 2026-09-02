@@ -4134,13 +4134,14 @@ async function shareGijangApp(){
     const data=sourceRows.length?sourceRows:rows;
     const find=function(label){return header.findIndex(function(h){return h.replace(/\s/g,'').includes(label);});};
     const idIndex=find('아이디');
-    const cal=find('학사일정수정'), notice=find('전달사항수정'), duty=find('급식당번수정'), nameIndex=find('교사실명');
+    const cal=find('학사일정수정'), notice=find('전달사항수정'), duty=find('급식당번수정'), roster=find('명렬보기'), nameIndex=find('교사실명');
     teacherAccounts.forEach(function(account){
       const row=data.slice(1).find(function(item){return String(item[idIndex>=0?idIndex:header.findIndex(function(h){return /아이디|로그인/.test(h);})]||'').trim()===account.id;});
       if(!row)return;
       if(nameIndex>=0&&row[nameIndex])account.name=String(row[nameIndex]).trim();
-      account.permissions={calendar:account.role==='admin'||(cal>=0&&asBool(row[cal])),notice:account.role==='admin'||(notice>=0&&asBool(row[notice])),duty:account.role==='admin'||(duty>=0&&asBool(row[duty]))};
+      account.permissions={calendar:account.role==='admin'||(cal>=0&&asBool(row[cal])),notice:account.role==='admin'||(notice>=0&&asBool(row[notice])),duty:account.role==='admin'||(duty>=0&&asBool(row[duty])),roster:account.role==='admin'||(roster>=0&&asBool(row[roster]))};
     });
+    updateRosterTabVisibility_();
     if(typeof isMasterUser==='function' && isMasterUser()){
       updateMasterPermissionTab();
       if(document.getElementById('tab-permissions')?.classList.contains('active')) renderMasterPermissions();
@@ -4196,7 +4197,7 @@ async function shareGijangApp(){
     }
     if(!document.getElementById('tab-permissions')){
       const section=document.createElement('section');section.className='tab';section.id='tab-permissions';
-      section.innerHTML='<div class="permissions-page-shell"><div class="section-title"><div><h2>교사 작성 및 접근 권한</h2><p>교사 계정을 확인하고, 교사별로 학사일정·담임교사 전달사항·조별 반복 급식 당번표의 작성 권한을 제어합니다.</p></div></div><div id="master-permissions-area"></div></div>';
+      section.innerHTML='<div class="permissions-page-shell"><div class="section-title"><div><h2>교사 작성 및 접근 권한</h2><p>교사 계정을 확인하고, 교사별로 학사일정·담임교사 전달사항·조별 반복 급식 당번표의 작성 권한과 명렬 보기 접근 권한을 제어합니다.</p></div></div><div id="master-permissions-area"></div></div>';
       const modal=document.getElementById('day-modal');modal.parentNode.insertBefore(section,modal);
     }
   }
@@ -4244,7 +4245,7 @@ async function shareGijangApp(){
     const query=String(permissionSearchText||'').trim().toLowerCase();
     if(query)teachers=teachers.filter(function(a){return String(a.name||'').toLowerCase().includes(query)||String(a.id||'').toLowerCase().includes(query);});
     const total=(teacherAccounts||[]).filter(function(a){return a.role!=='admin';}).length;
-    root.innerHTML='<article class="card" style="margin-top:18px"><h3>교사별 수정 권한</h3><p class="progress-note">체크한 권한만 해당 교사에게 표시됩니다. 저장하면 `교사 권한 관리` 시트에 반영됩니다.</p><div class="permission-toolbar"><input id="permission-teacher-search" type="search" placeholder="교사 이름 또는 아이디 검색" value="'+escapeHtml(permissionSearchText)+'"><button class="btn '+(permissionListMode==='name'?'primary':'')+'" id="permission-sort-name" type="button">이름순 정렬</button><button class="btn '+(permissionListMode==='source'?'primary':'')+'" id="permission-sort-source" type="button">기존 방식 보기</button><button class="btn primary" id="permission-bulk-save" type="button">선택 교사 일괄 저장</button></div><div class="progress-note" style="margin:8px 0">표시 중: '+teachers.length+'명 / 전체 '+total+'명</div><div style="overflow:auto"><table class="permissions-table"><thead><tr><th><label><input type="checkbox" id="permission-select-all"> 전체 선택</label><br>교사</th><th>학사일정 추가</th><th>안내사항 추가</th><th>급식 당번 수정</th><th></th></tr></thead><tbody>'+(teachers.length?teachers.map(function(a,i){const q=a.permissions||{};return '<tr data-perm-id="'+escapeHtml(a.id)+'"><td><input type="checkbox" data-perm-select> <b>'+escapeHtml(a.name||a.id)+'</b><br><small>'+escapeHtml(a.id)+'</small></td><td><input type="checkbox" data-perm="calendar" '+(q.calendar?'checked':'')+'></td><td><input type="checkbox" data-perm="notice" '+(q.notice?'checked':'')+'></td><td><input type="checkbox" data-perm="duty" '+(q.duty?'checked':'')+'></td><td><button class="btn" data-save-perm="'+i+'" type="button">저장</button></td></tr>';}).join(''):'<tr><td colspan="5" class="progress-note">검색 결과가 없습니다.</td></tr>')+'</tbody></table></div><div id="permissions-status" class="settings-message"></div></article>';
+    root.innerHTML='<article class="card" style="margin-top:18px"><h3>교사별 수정 권한</h3><p class="progress-note">체크한 권한만 해당 교사에게 표시됩니다. 저장하면 `교사 권한 관리` 시트에 반영됩니다.</p><div class="permission-toolbar"><input id="permission-teacher-search" type="search" placeholder="교사 이름 또는 아이디 검색" value="'+escapeHtml(permissionSearchText)+'"><button class="btn '+(permissionListMode==='name'?'primary':'')+'" id="permission-sort-name" type="button">이름순 정렬</button><button class="btn '+(permissionListMode==='source'?'primary':'')+'" id="permission-sort-source" type="button">기존 방식 보기</button><button class="btn primary" id="permission-bulk-save" type="button">선택 교사 일괄 저장</button></div><div class="progress-note" style="margin:8px 0">표시 중: '+teachers.length+'명 / 전체 '+total+'명</div><div style="overflow:auto"><table class="permissions-table"><thead><tr><th><label><input type="checkbox" id="permission-select-all"> 전체 선택</label><br>교사</th><th>학사일정 추가</th><th>안내사항 추가</th><th>급식 당번 수정</th><th>명렬 보기</th><th></th></tr></thead><tbody>'+(teachers.length?teachers.map(function(a,i){const q=a.permissions||{};return '<tr data-perm-id="'+escapeHtml(a.id)+'"><td><input type="checkbox" data-perm-select> <b>'+escapeHtml(a.name||a.id)+'</b><br><small>'+escapeHtml(a.id)+'</small></td><td><input type="checkbox" data-perm="calendar" '+(q.calendar?'checked':'')+'></td><td><input type="checkbox" data-perm="notice" '+(q.notice?'checked':'')+'></td><td><input type="checkbox" data-perm="duty" '+(q.duty?'checked':'')+'></td><td><input type="checkbox" data-perm="roster" '+(q.roster?'checked':'')+'></td><td><button class="btn" data-save-perm="'+i+'" type="button">저장</button></td></tr>';}).join(''):'<tr><td colspan="6" class="progress-note">검색 결과가 없습니다.</td></tr>')+'</tbody></table></div><div id="permissions-status" class="settings-message"></div></article>';
     const search=root.querySelector('#permission-teacher-search');if(search){let composing=false,timer=null;search.addEventListener('compositionstart',function(){composing=true;});search.addEventListener('compositionend',function(){composing=false;permissionSearchText=search.value;renderMasterPermissions();});search.addEventListener('input',function(){permissionSearchText=search.value;if(composing)return;clearTimeout(timer);timer=setTimeout(function(){renderMasterPermissions();},180);});}
     root.querySelector('#permission-sort-name')?.addEventListener('click',function(){permissionListMode='name';renderMasterPermissions();});
     root.querySelector('#permission-sort-source')?.addEventListener('click',function(){permissionListMode='source';renderMasterPermissions();});
@@ -4261,6 +4262,16 @@ async function shareGijangApp(){
     const key='gijang_login_alert_seen::'+(currentAccountId||'')+'::'+dateKey(today);if(message.length&&!sessionStorage.getItem(key)){sessionStorage.setItem(key,'1');setTimeout(function(){alert(message.join('\n'));},350);}
   }
   function updateMasterPermissionTab(){const tab=document.getElementById('permissions-tab-btn');if(tab)tab.style.display=isMasterUser()?'':'none';}
+  function updateRosterTabVisibility_(){
+    const btn=document.querySelector('[data-tab="roster"]');
+    if(!btn)return;
+    const allowed=!currentAccountId || permissionFor('roster'); // 로그인 전(비로그인 방문자)에는 기존처럼 보이게 두고, 로그인한 교사는 권한 필요
+    btn.style.display=allowed?'':'none';
+    if(!allowed && document.getElementById('tab-roster')?.classList.contains('active')){
+      const firstTab=document.querySelector('nav button[data-tab]:not([style*="display: none"])');
+      if(firstTab)firstTab.click();
+    }
+  }
   establishLogin_=function(account,pw){originalEstablishLogin(account,pw);setTimeout(function(){updateMasterPermissionTab();renderSettings();showAlerts();},250);};
   openDayModal=function(date,evs,holiday){originalOpenDayModal(date,evs,holiday);if(!permissionFor('calendar'))return;const body=document.getElementById('day-modal-body');let eventIndex=0;body.querySelectorAll('.event-row').forEach(function(row){if(row.querySelector('.holiday-title'))return;const ev=evs[eventIndex++];if(!ev||!ev.row||row.querySelector('.member-actions'))return;const actions=document.createElement('div');actions.className='member-actions';actions.style.marginTop='8px';const edit=document.createElement('button');edit.className='btn';edit.textContent='수정';edit.onclick=function(){startCalendarEdit(ev,date);};const del=document.createElement('button');del.className='btn danger';del.textContent='삭제';del.onclick=function(){deleteDashboardRow('학사일정',ev.row,'학사일정');};actions.append(edit,del);row.appendChild(actions);});};
   renderNotices=function(){
