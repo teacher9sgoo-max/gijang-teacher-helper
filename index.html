@@ -578,6 +578,18 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
 .member-table tr:last-child td{border-bottom:0;}.member-table .admin-row{background:#F5FBF7;}.member-actions{display:flex;gap:6px;justify-content:flex-end;}.member-actions .btn{padding:6px 9px;font-size:12px;}
 .member-edit{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:center;min-width:680px;}.role-chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:700;background:#EDF7F0;color:#267246;}.role-chip.teacher{background:#F0F3F2;color:#57645C;}
 @media(max-width:780px){.member-grid{grid-template-columns:1fr;}.member-edit{grid-template-columns:1fr;min-width:0;}.member-table{min-width:460px;}}
+#quick-links-banner{display:none;padding:10px 20px;background:var(--surface-2,#F2F6F3);border-bottom:1px solid var(--border,#E1E8E3);}
+.qlink-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.qlink-chip{display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--border,#E1E8E3);border-radius:999px;padding:5px 6px 5px 12px;font-size:13px;}
+.qlink-chip a{color:var(--accent,#2C6B47);text-decoration:none;font-weight:600;}
+.qlink-chip a:hover{text-decoration:underline;}
+.qlink-del{border:0;background:transparent;color:#9d3e2b;font-size:15px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:999px;}
+.qlink-del:hover{background:#fbe6e1;}
+.qlink-empty{font-size:13px;color:var(--text-soft,#6b786e);}
+.qlink-add-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.qlink-add-row input{border:1px solid var(--border,#E1E8E3);border-radius:8px;padding:7px 10px;font-size:13px;background:#fffdf8;}
+.qlink-add-row input#qlink-name-input{width:140px;}
+.qlink-add-row input#qlink-url-input{flex:1;min-width:220px;}
 </style>
 </head>
 <body>
@@ -600,6 +612,8 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
   </div>
 
   <div id="status-banner"></div>
+
+  <div id="quick-links-banner"></div>
 
   <nav class="tabs">
     <button data-tab="dashboard" class="active">대시보드</button>
@@ -1406,6 +1420,7 @@ function establishLogin_(account,pw){
   errEl.textContent = '';
   updateUserBadge();
   refreshMemberAccess();
+  renderQuickLinksBanner();
   hideLoginModal();
   renderProgressLog();
   renderActivityLog();
@@ -1491,6 +1506,7 @@ document.addEventListener('DOMContentLoaded', ()=>{ showStatus('loading'); initM
 let calendarEvents = {};
 let notices = [];
 let students = [];
+let quickLinks = [];
 let dutyEntries = []; // {start,end,name}
 let weeklyDutyRotation = {baseMonday:null, activeGroup:0, groups:{1:[],2:[]}};
 let progressSheetRows = [];
@@ -1809,10 +1825,71 @@ function buildStudents(rows){
   });
 }
 
+/* ---------------- 교사 바로가기 링크 배너 (마스터가 사이트 이름·주소를 등록/삭제) ---------------- */
+function buildQuickLinks(rows){
+  const list=[];
+  if(Array.isArray(rows)){
+    rows.slice(1).forEach(function(r){
+      const name=(r[0]||'').toString().trim();
+      const url=(r[1]||'').toString().trim();
+      if(name && /^https?:\/\//i.test(url)) list.push({name:name, url:url});
+    });
+  }
+  quickLinks = list;
+}
+function renderQuickLinksBanner(){
+  const root = document.getElementById('quick-links-banner');
+  if(!root) return;
+  const isAdmin = currentRole==='admin';
+  const links = quickLinks || [];
+  if(!links.length && !isAdmin){ root.innerHTML=''; root.style.display='none'; return; }
+  root.style.display='';
+  const chips = links.map(function(link,index){
+    const del = isAdmin ? '<button type="button" class="qlink-del" data-qlink-del="'+index+'" title="삭제">×</button>' : '';
+    return '<span class="qlink-chip"><a href="'+escapeHtml(link.url)+'" target="_blank" rel="noopener">'+escapeHtml(link.name)+'</a>'+del+'</span>';
+  }).join('');
+  const adminForm = isAdmin ? '<div class="qlink-add-row"><input id="qlink-name-input" type="text" placeholder="사이트 이름"><input id="qlink-url-input" type="text" placeholder="https://로 시작하는 주소"><button type="button" class="btn" id="qlink-add-btn">+ 추가</button></div>' : '';
+  root.innerHTML = '<div class="qlink-bar">'+(chips || '<span class="qlink-empty">등록된 바로가기가 없습니다.</span>')+'</div>'+adminForm;
+  if(isAdmin){
+    root.querySelectorAll('[data-qlink-del]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const idx = Number(btn.dataset.qlinkDel);
+        if(!confirm('이 바로가기를 삭제할까요?')) return;
+        const next = links.slice(); next.splice(idx,1);
+        saveQuickLinks_(next);
+      });
+    });
+    const addBtn = document.getElementById('qlink-add-btn');
+    if(addBtn) addBtn.addEventListener('click', function(){
+      const nameEl=document.getElementById('qlink-name-input'), urlEl=document.getElementById('qlink-url-input');
+      const name=(nameEl.value||'').trim();
+      let url=(urlEl.value||'').trim();
+      if(!name){ alert('사이트 이름을 입력하세요.'); return; }
+      if(url && !/^https?:\/\//i.test(url)) url='https://'+url.replace(/^\/+/,'');
+      if(!/^https?:\/\/.+/.test(url)){ alert('올바른 주소(https://로 시작)를 입력하세요.'); return; }
+      const next = links.concat([{name:name, url:url}]);
+      addBtn.disabled = true;
+      saveQuickLinks_(next).finally(function(){ addBtn.disabled=false; });
+    });
+  }
+}
+async function saveQuickLinks_(nextLinks){
+  const url = activeWriteApiUrl();
+  if(!url){ alert('Apps Script 웹앱 주소가 설정되지 않았습니다.'); return; }
+  try{
+    const res = await fetch(url, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action:'quickLinksSave', links:nextLinks, loginId:currentAccountId, password:currentLoginPassword})});
+    const data = await res.json();
+    if(data && data.success){ quickLinks = nextLinks; renderQuickLinksBanner(); }
+    else{ alert('실패하였습니다.\n'+((data&&data.error)||'바로가기 저장에 실패했습니다.')); }
+  }catch(error){
+    alert('네트워크 오류로 바로가기를 저장하지 못했습니다.');
+  }
+}
+
 async function loadAll(){
   showStatus('loading');
   let timetableRows=[];
-  const sheetNames=['학사일정','담임교사 전달사항','전체 명렬표','급식당번','시간표 캐시','교사 아이디 비번','조별 반복 당번표','수업 진도','학생 활동 기록','교사 권한 관리'];
+  const sheetNames=['학사일정','담임교사 전달사항','전체 명렬표','급식당번','시간표 캐시','교사 아이디 비번','조별 반복 당번표','수업 진도','학생 활동 기록','교사 권한 관리','교사 바로가기 링크'];
   // 한 시트의 지연·실패가 회원 명부 로그인까지 막지 않도록 하되, 요청 자체는 한 번에 모아서 보냅니다.
   const sheetResults=await fetchSheetRowsBatch(sheetNames);
   const rowsAt=index=>sheetResults[index]?.status==='fulfilled'&&Array.isArray(sheetResults[index].value)?sheetResults[index].value:[];
@@ -1828,6 +1905,7 @@ async function loadAll(){
   progressSheetRows=rowsAt(7);
   activitySheetRows=rowsAt(8);
   permissionSheetRows=rowsAt(9);
+  buildQuickLinks(rowsAt(10));
   if(currentAccountId) hydratePersonalCloudRecords_();
   hideStatus();
   document.getElementById('sync-label').textContent = failedSheets.length ? `일부 자료 지연 · ${failedSheets.join(', ')}` : '마지막 업데이트 ' + new Date().toLocaleTimeString('ko-KR');
@@ -1835,6 +1913,7 @@ async function loadAll(){
   renderNotices();
   renderDuty();
   renderWeeklyDutyRotation();
+  renderQuickLinksBanner();
   buildTeacherTimetable(timetableRows);
   populateTeacherSelect();
   initAuth();
@@ -4370,10 +4449,26 @@ async function shareGijangApp(){
   // '사이트 설정' 시트에 옛날/잘못된 앱스크립트 주소가 남아 있으면, 지금 정상적으로
   // 연결되고 있는 주소를 그 낡은 주소로 몰래 덮어써서 로그인이 막히는 사고가 났었습니다.
   // 그래서 앱스크립트 주소만큼은 "실제로 응답하는지" 먼저 확인한 뒤에만 바꿔 적용합니다.
+  function pingDoGet_(url){
+    return new Promise(function(resolve){
+      const cb='gijangPingCb_'+Date.now()+'_'+Math.floor(Math.random()*100000);
+      const script=document.createElement('script');
+      const timer=setTimeout(function(){cleanup();resolve(null);},8000);
+      function cleanup(){clearTimeout(timer);delete window[cb];if(script.parentNode)script.parentNode.removeChild(script);}
+      window[cb]=function(data){cleanup();resolve(data||null);};
+      script.onerror=function(){cleanup();resolve(null);};
+      script.src=url+(url.indexOf('?')>=0?'&':'?')+'callback='+encodeURIComponent(cb)+'&_='+Date.now();
+      document.head.appendChild(script);
+    });
+  }
+  // 응답이 오는지뿐 아니라, 그 응답이 'login' 기능을 가진 "지금 이 코드"인지까지 확인합니다.
+  // 옛날 배포도 응답 자체는 정상으로 하는 경우가 많아서, success 여부만으로는 걸러지지 않았습니다.
   async function pingWriteApiUrl_(url){
     if(!url)return false;
-    try{ const r=await siteConfigRequest_(url); return !!(r&&r.success); }
-    catch(e){ return false; }
+    try{
+      const r=await pingDoGet_(url);
+      return !!(r && r.success && Array.isArray(r.features) && r.features.indexOf('login')>=0);
+    }catch(e){ return false; }
   }
   async function loadSiteConfig_(){
     try{
