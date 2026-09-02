@@ -4367,12 +4367,32 @@ async function shareGijangApp(){
     if(config.timetableServerUrl){try{localStorage.setItem(TIMETABLE_SERVER_URL_KEY,config.timetableServerUrl);}catch(e){}}
     try{localStorage.setItem(SITE_CONFIG_LOCAL_KEY,JSON.stringify(config));}catch(e){}
   }
+  // '사이트 설정' 시트에 옛날/잘못된 앱스크립트 주소가 남아 있으면, 지금 정상적으로
+  // 연결되고 있는 주소를 그 낡은 주소로 몰래 덮어써서 로그인이 막히는 사고가 났었습니다.
+  // 그래서 앱스크립트 주소만큼은 "실제로 응답하는지" 먼저 확인한 뒤에만 바꿔 적용합니다.
+  async function pingWriteApiUrl_(url){
+    if(!url)return false;
+    try{ const r=await siteConfigRequest_(url); return !!(r&&r.success); }
+    catch(e){ return false; }
+  }
   async function loadSiteConfig_(){
     try{
       const base=activeWriteApiUrl();
       if(!base)return;
       const result=await siteConfigRequest_(base);
-      if(result&&result.config){setSiteConfig_(result.config);if(typeof loadAll==='function')loadAll();}
+      if(result&&result.config){
+        const config=Object.assign({},result.config);
+        const newUrl=String(config.writeApiUrl||'').trim().replace(/\/$/,'');
+        if(newUrl && newUrl!==base){
+          const healthy=await pingWriteApiUrl_(newUrl);
+          if(!healthy){
+            console.warn('사이트 설정에 저장된 앱스크립트 주소가 응답하지 않아 현재 사용 중인 주소를 계속 사용합니다:', newUrl);
+            delete config.writeApiUrl; // 지금 쓰던(정상 동작 중인) 주소를 그대로 유지
+          }
+        }
+        setSiteConfig_(config);
+        if(typeof loadAll==='function')loadAll();
+      }
     }catch(error){
       try{const saved=JSON.parse(localStorage.getItem(SITE_CONFIG_LOCAL_KEY)||'{}');if(saved.sheetId||saved.writeApiUrl)setSiteConfig_(saved);}catch(e){}
     }
