@@ -1584,6 +1584,38 @@ async function fetchSheetRows(name){
   return data.rows || [];
 }
 
+// 여러 시트를 한 번의 서버 요청으로 모아서 가져옵니다(로그인 직후 화면을 채울 때 이 방식을 씁니다).
+// 시트마다 따로 요청하면 매번 왕복 지연이 쌓여서 느려지므로, 한 번에 모아 보내 속도를 올립니다.
+// 배치 API를 지원하지 않는(옛 버전) 서버라면 예전처럼 하나씩 개별 요청으로 자동 대체합니다.
+async function fetchSheetRowsBatch(names){
+  const url = activeWriteApiUrl();
+  if(!url) throw new Error('시트를 불러올 서버 주소가 없습니다.');
+  try{
+    const controller = new AbortController();
+    const timeoutId = setTimeout(()=>controller.abort(), 20000);
+    let res;
+    try{
+      res = await fetch(url, {
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'sheetReadBatch', sheetNames:names, loginId: currentAccountId||'', password: currentLoginPassword||''}),
+        signal: controller.signal
+      });
+    }finally{
+      clearTimeout(timeoutId);
+    }
+    const data = await res.json();
+    if(!data || !data.success) throw new Error((data && data.error) || '시트를 불러오지 못했습니다.');
+    return names.map(function(name){
+      if(data.sheets && Object.prototype.hasOwnProperty.call(data.sheets,name)) return {status:'fulfilled', value:data.sheets[name]};
+      return {status:'rejected', reason:new Error((data.errors && data.errors[name]) || `'${name}' 시트를 불러오지 못했습니다.`)};
+    });
+  }catch(error){
+    // 배치 요청 자체가 실패하면(예: 옛 버전 서버) 하나씩 개별 요청으로 대체합니다.
+    return Promise.allSettled(names.map(function(name){ return fetchSheetRows(name); }));
+  }
+}
+
 function renderTimetableCacheTab(rows=latestTimetableCacheRows, message=''){
   const status=document.getElementById('tt-cache-status');
   const summary=document.getElementById('tt-cache-summary');
@@ -1780,21 +1812,11 @@ function buildStudents(rows){
 async function loadAll(){
   showStatus('loading');
   let timetableRows=[];
-  // 한 시트의 지연·실패가 회원 명부 로그인까지 막지 않도록 각각 독립 처리합니다.
-  const sheetResults=await Promise.allSettled([
-    fetchSheetRows('학사일정'),
-    fetchSheetRows('담임교사 전달사항'),
-    fetchSheetRows('전체 명렬표'),
-    fetchSheetRows('급식당번'),
-    fetchSheetRows('시간표 캐시'),
-    fetchSheetRows('교사 아이디 비번'),
-    fetchSheetRows('조별 반복 당번표'),
-    fetchSheetRows('수업 진도'),
-    fetchSheetRows('학생 활동 기록'),
-    fetchSheetRows('교사 권한 관리'),
-  ]);
+  const sheetNames=['학사일정','담임교사 전달사항','전체 명렬표','급식당번','시간표 캐시','교사 아이디 비번','조별 반복 당번표','수업 진도','학생 활동 기록','교사 권한 관리'];
+  // 한 시트의 지연·실패가 회원 명부 로그인까지 막지 않도록 하되, 요청 자체는 한 번에 모아서 보냅니다.
+  const sheetResults=await fetchSheetRowsBatch(sheetNames);
   const rowsAt=index=>sheetResults[index]?.status==='fulfilled'&&Array.isArray(sheetResults[index].value)?sheetResults[index].value:[];
-  const failedSheets=sheetResults.map((r,i)=>r.status==='rejected'?['학사일정','담임교사 전달사항','전체 명렬표','급식당번','시간표 캐시','교사 아이디 비번','조별 반복 당번표','수업 진도','학생 활동 기록','교사 권한 관리'][i]:'').filter(Boolean);
+  const failedSheets=sheetResults.map((r,i)=>r.status==='rejected'?sheetNames[i]:'').filter(Boolean);
   buildCalendar(rowsAt(0));
   buildNotices(rowsAt(1));
   buildStudents(rowsAt(2));
