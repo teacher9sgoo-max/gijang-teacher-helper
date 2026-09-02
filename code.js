@@ -9,6 +9,7 @@
  */
 
 const ROSTER_SPREADSHEET_ID = '1_qIRbv44zWd9yv4yNzTQ0frXTvILl2-iejzPqhF8i2w';
+const CODE_VERSION = '2026-09-02-batch-read-v1';
 const ROSTER_SHEET_NAME = '교사 아이디 비번';
 const TEACHER_PERMISSION_SHEET_NAME = '교사 권한 관리';
 const ROSTER_SECRET_PROPERTY = 'SHEET_WRITE_SECRET';
@@ -39,6 +40,22 @@ function onOpen() {
     .addItem('📤 학년별 명렬표 엑셀 업로드', 'menuUploadRosterExcel_')
     .addItem('🔄 전체 명렬표 다시 만들기', 'rebuildAllRosterSheet_')
     .addToUi();
+  SpreadsheetApp.getUi()
+    .createMenu('🔗 사이트 설정 관리')
+    .addItem('🆕 사이트 설정 시트 만들기', 'menuCreateSiteConfigSheet_')
+    .addToUi();
+}
+
+function menuCreateSiteConfigSheet_() {
+  const ui = SpreadsheetApp.getUi();
+  try {
+    const sheet = siteConfigSheet_();
+    writeSiteConfigToSheet_(readSiteConfig_()); // 항목 이름을 항상 최신 한글 라벨로 맞춰줍니다.
+    SpreadsheetApp.getActiveSpreadsheet().setActiveSheet(sheet);
+    ui.alert('사이트 설정 시트 준비 완료', `'${SITE_CONFIG_SHEET_NAME}' 시트를 확인·정리했습니다. '주소/값' 칸을 직접 고치면 웹앱에 바로 반영됩니다.\n\n'시트 주소' 칸은 전체 링크를 그대로 붙여넣으셔도 됩니다.`, ui.ButtonSet.OK);
+  } catch (error) {
+    ui.alert('오류', errorMessage_(error), ui.ButtonSet.OK);
+  }
 }
 
 function menuSyncTimetableCache_() {
@@ -88,15 +105,105 @@ const SITE_CONFIG_DEFAULTS = {
 };
 
 function configuredSpreadsheetId_() {
-  const raw = PropertiesService.getScriptProperties().getProperty(SITE_CONFIG_PROPERTY);
-  try { const value = raw ? JSON.parse(raw).sheetId : ''; if (/^[A-Za-z0-9_-]{20,}$/.test(String(value || ''))) return String(value); } catch (error) {}
+  const value = readSiteConfig_().sheetId;
+  if (/^[A-Za-z0-9_-]{20,}$/.test(String(value || ''))) return String(value);
   return ROSTER_SPREADSHEET_ID;
 }
 
+// '사이트 설정' 시트는 항상 고정된(ROSTER_SPREADSHEET_ID) 스프레드시트 안에 둡니다.
+// 그래야 설정값 자체가 잘못돼도(예: sheetId를 엉뚱하게 저장) 설정 시트를 계속 찾아서 고칠 수 있습니다.
+const SITE_CONFIG_SHEET_NAME = '사이트 설정';
+const SITE_CONFIG_FIELDS = [
+  { key: 'sheetId', label: '시트 주소(구글 스프레드시트 링크)' },
+  { key: 'writeApiUrl', label: '앱스크립트 주소(웹앱 /exec 링크)' },
+  { key: 'timetableOfficialUrl', label: '시간표 공식 사이트 주소' },
+  { key: 'timetableServerUrl', label: '시간표 서버 주소(선택 사항)' },
+  { key: 'windowsInstallerUrl', label: '설치파일 다운로드 주소' },
+  { key: 'schoolCode', label: '학교 코드' }
+];
+const SITE_CONFIG_KEYS = SITE_CONFIG_FIELDS.map(function(f) { return f.key; });
+
+function siteConfigFieldLabel_(key) {
+  const found = SITE_CONFIG_FIELDS.filter(function(f) { return f.key === key; })[0];
+  return found ? found.label : key;
+}
+
+// 시트의 A열에는 한글 라벨이 적히지만, 예전 버전(영문 키)으로 저장된 셀도 계속 인식합니다.
+function siteConfigKeyFromCell_(cellText) {
+  const text = String(cellText || '').trim();
+  const byLabel = SITE_CONFIG_FIELDS.filter(function(f) { return f.label === text; })[0];
+  if (byLabel) return byLabel.key;
+  const byKey = SITE_CONFIG_FIELDS.filter(function(f) { return f.key === text; })[0];
+  return byKey ? byKey.key : '';
+}
+
+// '시트 주소' 칸은 전체 링크를 그대로 붙여넣어도 되고, ID만 적어도 됩니다.
+function extractSheetId_(value) {
+  const text = String(value || '').trim();
+  const matched = text.match(/\/d\/([A-Za-z0-9_-]{20,})/);
+  if (matched) return matched[1];
+  if (/^[A-Za-z0-9_-]{20,}$/.test(text)) return text;
+  return '';
+}
+
+function siteConfigSheet_() {
+  const spreadsheet = SpreadsheetApp.openById(ROSTER_SPREADSHEET_ID);
+  let sheet = spreadsheet.getSheetByName(SITE_CONFIG_SHEET_NAME);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(SITE_CONFIG_SHEET_NAME);
+    sheet.getRange(1, 1, 1, 2).setValues([['항목', '주소/값']]).setFontWeight('bold');
+    const seedRows = SITE_CONFIG_FIELDS.map(function(f) {
+      const value = f.key === 'sheetId'
+        ? ('https://docs.google.com/spreadsheets/d/' + ROSTER_SPREADSHEET_ID + '/edit')
+        : String(SITE_CONFIG_DEFAULTS[f.key] || '');
+      return [f.label, value];
+    });
+    sheet.getRange(2, 1, seedRows.length, 2).setValues(seedRows);
+    sheet.getRange(2, 2, seedRows.length, 1).setNumberFormat('@STRING@');
+    sheet.autoResizeColumns(1, 1);
+    sheet.setColumnWidth(2, 420);
+  }
+  return sheet;
+}
+
 function readSiteConfig_() {
-  const raw = PropertiesService.getScriptProperties().getProperty(SITE_CONFIG_PROPERTY);
-  try { return Object.assign({}, SITE_CONFIG_DEFAULTS, raw ? JSON.parse(raw) : {}); }
-  catch (error) { return Object.assign({}, SITE_CONFIG_DEFAULTS); }
+  const config = Object.assign({}, SITE_CONFIG_DEFAULTS);
+  try {
+    const sheet = siteConfigSheet_();
+    const lastRow = sheet.getLastRow();
+    if (lastRow >= 2) {
+      const rows = sheet.getRange(2, 1, lastRow - 1, 2).getDisplayValues();
+      rows.forEach(function(row) {
+        const key = siteConfigKeyFromCell_(row[0]);
+        const rawValue = String(row[1] || '').trim();
+        if (!key || !rawValue) return;
+        config[key] = key === 'sheetId' ? (extractSheetId_(rawValue) || config.sheetId) : rawValue;
+      });
+    }
+  } catch (error) {
+    // 시트를 못 읽는 경우(권한 문제 등)에도 기본값으로 계속 동작합니다.
+  }
+  return config;
+}
+
+function writeSiteConfigToSheet_(config) {
+  const sheet = siteConfigSheet_();
+  const lastRow = sheet.getLastRow();
+  const existing = lastRow >= 2 ? sheet.getRange(2, 1, lastRow - 1, 1).getValues() : [];
+  const rowByKey = {};
+  existing.forEach(function(row, i) {
+    const key = siteConfigKeyFromCell_(row[0]);
+    if (key) rowByKey[key] = i + 2;
+  });
+  SITE_CONFIG_FIELDS.forEach(function(field) {
+    const key = field.key;
+    const value = key === 'sheetId'
+      ? ('https://docs.google.com/spreadsheets/d/' + String(config[key] || '') + '/edit')
+      : String(config[key] == null ? '' : config[key]);
+    const rowNumber = rowByKey[key] || (sheet.getLastRow() + 1);
+    sheet.getRange(rowNumber, 1).setValue(field.label); // 예전 영문 키였다면 한글 라벨로 갱신
+    sheet.getRange(rowNumber, 2).setNumberFormat('@STRING@').setValue(value);
+  });
 }
 
 function cleanSiteUrl_(value) {
@@ -114,16 +221,73 @@ function siteConfigUpdate_(request) {
   const input = request.config || {};
   const config = readSiteConfig_();
   if (input.sheetId != null) {
-    const id = String(input.sheetId).trim().replace(/^.*\/d\//, '').split(/[/?#]/)[0];
-    if (!/^[A-Za-z0-9_-]{20,}$/.test(id)) throw new Error('스프레드시트 ID가 올바르지 않습니다.');
+    const id = extractSheetId_(input.sheetId);
+    if (!id) throw new Error('시트 주소(링크) 또는 ID가 올바르지 않습니다.');
     config.sheetId = id;
   }
   ['writeApiUrl', 'timetableOfficialUrl', 'timetableServerUrl', 'windowsInstallerUrl'].forEach(function(key) {
     if (input[key] != null) config[key] = cleanSiteUrl_(input[key]);
   });
   if (input.schoolCode != null) config.schoolCode = String(input.schoolCode).trim();
-  PropertiesService.getScriptProperties().setProperty(SITE_CONFIG_PROPERTY, JSON.stringify(config));
+  writeSiteConfigToSheet_(config);
+  PropertiesService.getScriptProperties().setProperty(SITE_CONFIG_PROPERTY, JSON.stringify(config)); // 백업용으로 계속 같이 저장
   return json_({ success: true, config: config, message: '사이트 설정이 저장되었습니다.' });
+}
+
+/* ---------------- 시트 읽기·로그인을 서버가 대신 처리 (스프레드시트를 비공개로 돌려도 동작) ---------------- */
+// 이 목록의 시트는 로그인한 계정만 읽을 수 있습니다(학생 개인정보 보호).
+const SENSITIVE_READ_SHEETS = ['학생 활동 기록', '수업 진도'];
+
+function readSheetRowsRaw_(spreadsheet, name) {
+  const sheet = spreadsheet.getSheetByName(name);
+  if (!sheet) throw new Error("'" + name + "' 시트를 찾지 못했습니다.");
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  if (lastRow < 1 || lastCol < 1) return [];
+  const rows = sheet.getRange(1, 1, lastRow, lastCol).getDisplayValues();
+  if (name === ROSTER_SHEET_NAME && rows.length) {
+    // '교사 아이디 비번' 시트는 비밀번호 칸을 항상 비워서 돌려줍니다. 브라우저는 절대 실제 비밀번호를 받지 않습니다.
+    const header = rows[0].map(function(v) { return String(v || '').replace(/\s+/g, '').trim(); });
+    const pwIndex = header.findIndex(function(h) { return ['비밀번호', '비번', '패스워드'].indexOf(h) >= 0; });
+    if (pwIndex >= 0) {
+      for (var i = 1; i < rows.length; i++) rows[i][pwIndex] = '';
+    }
+  }
+  return rows;
+}
+
+function sheetRead_(request) {
+  const name = String(request.sheetName || '').trim();
+  if (!name) throw new Error('시트 이름이 필요합니다.');
+  if (SENSITIVE_READ_SHEETS.indexOf(name) >= 0) {
+    // 로그인 정보가 유효하지 않으면 accountWithPermissions_ 내부에서 에러를 던집니다.
+    accountWithPermissions_(request.loginId, request.password);
+  }
+  const spreadsheet = SpreadsheetApp.openById(configuredSpreadsheetId_());
+  return json_({ success: true, sheetName: name, rows: readSheetRowsRaw_(spreadsheet, name) });
+}
+
+// 여러 시트를 한 번의 요청으로 모아서 읽습니다. 시트마다 따로 서버를 호출하면 매번
+// 스프레드시트를 여는 왕복 지연이 쌓여서(특히 로그인 직후 화면 전체를 채울 때) 느려지므로,
+// 로딩 속도를 위해 한 번의 실행에서 스프레드시트를 한 번만 열고 전부 읽어서 돌려줍니다.
+function sheetReadBatch_(request) {
+  const names = Array.isArray(request.sheetNames) ? request.sheetNames.map(function(n) { return String(n || '').trim(); }).filter(Boolean) : [];
+  if (!names.length) throw new Error('시트 이름 목록이 필요합니다.');
+  const needsAuth = names.some(function(n) { return SENSITIVE_READ_SHEETS.indexOf(n) >= 0; });
+  if (needsAuth) accountWithPermissions_(request.loginId, request.password);
+  const spreadsheet = SpreadsheetApp.openById(configuredSpreadsheetId_());
+  const sheets = {};
+  const errors = {};
+  names.forEach(function(name) {
+    try { sheets[name] = readSheetRowsRaw_(spreadsheet, name); }
+    catch (error) { errors[name] = errorMessage_(error); }
+  });
+  return json_({ success: true, sheets: sheets, errors: errors });
+}
+
+function loginCheck_(request) {
+  const account = accountWithPermissions_(request.loginId, request.password);
+  return json_({ success: true, account: { id: account.loginId, name: account.realName, role: account.isMaster ? 'admin' : 'teacher' } });
 }
 
 function jsonp_(data, callback) {
@@ -139,7 +303,7 @@ function doGet(e) {
     const data = { success: true, config: readSiteConfig_() };
     return jsonp_(data, callback);
   }
-  return jsonp_({ success: true, service: '기장중학교 교무 도우미', endpoint: 'doPost', permissionSheet: TEACHER_PERMISSION_SHEET_NAME }, callback);
+  return jsonp_({ success: true, service: '기장중학교 교무 도우미', endpoint: 'doPost', permissionSheet: TEACHER_PERMISSION_SHEET_NAME, codeVersion: CODE_VERSION, features: ['sheetRead', 'sheetReadBatch', 'login', 'siteConfigSheet'] }, callback);
 }
 
 function doPost(e) {
@@ -157,6 +321,9 @@ function doPost(e) {
     if (action === 'syncTimetableCache') return syncTimetableCacheAsAdmin_(request);
     if (action === 'siteConfigGet') return siteConfigGet_();
     if (action === 'siteConfigUpdate') return siteConfigUpdate_(request);
+    if (action === 'sheetRead') return sheetRead_(request);
+    if (action === 'sheetReadBatch') return sheetReadBatch_(request);
+    if (action === 'login') return loginCheck_(request);
     requireSecret_(request.secret);
 
     const lock = LockService.getScriptLock();
@@ -187,6 +354,13 @@ function requireSecret_(providedSecret) {
   const configuredSecret = PropertiesService.getScriptProperties().getProperty(ROSTER_SECRET_PROPERTY);
   if (!configuredSecret) throw new Error('SHEET_WRITE_SECRET 스크립트 속성이 설정되지 않았습니다.');
   if (String(providedSecret || '') !== configuredSecret) throw new Error('회원 명부 쓰기 인증에 실패했습니다.');
+}
+
+/** 비밀번호 셀은 항상 '일반 텍스트' 서식으로 고정한 뒤 문자열 그대로 저장합니다.
+ * 서식을 고정하지 않으면 순수 숫자거나 날짜처럼 보이는 비밀번호(예: 0417, 3/4)를
+ * 구글 시트가 자동으로 숫자·날짜로 변환해 버려서, 저장한 그대로 로그인할 수 없게 됩니다. */
+function setPasswordCell_(range, password) {
+  range.setNumberFormat('@STRING@').setValue(String(password == null ? '' : password));
 }
 
 function rosterSheet_() {
@@ -264,9 +438,9 @@ function createAccount_(request) {
   const row = Array(columns.width).fill('');
   if (columns.serial >= 0) row[columns.serial] = nextSerial_(accounts);
   row[columns.loginId] = loginId;
-  row[columns.password] = password;
   row[columns.realName] = realName;
   sheet.appendRow(row);
+  setPasswordCell_(sheet.getRange(sheet.getLastRow(), columns.password + 1), password);
   return json_({ success: true, action: 'create', loginId: loginId });
 }
 
@@ -285,7 +459,7 @@ function updateAccount_(request) {
 
   sheet.getRange(existing.rowNumber, columns.loginId + 1).setValue(loginId);
   sheet.getRange(existing.rowNumber, columns.realName + 1).setValue(realName);
-  if (password) sheet.getRange(existing.rowNumber, columns.password + 1).setValue(password);
+  if (password) setPasswordCell_(sheet.getRange(existing.rowNumber, columns.password + 1), password);
   return json_({ success: true, action: 'update', loginId: loginId });
 }
 
@@ -869,7 +1043,7 @@ function accountWithPermissions_(loginId, password) {
   const roleIndex = normalized.findIndex(function(header) { return ['권한','역할','role'].indexOf(header) >= 0; });
   const values = sheet.getDataRange().getDisplayValues();
   const rowIndex = values.slice(1).findIndex(function(row) {
-    return String(row[idIndex] || '').trim() === String(loginId || '').trim() && String(row[passwordIndex] || '') === String(password || '');
+    return String(row[idIndex] == null ? '' : row[idIndex]).trim() === String(loginId == null ? '' : loginId).trim() && String(row[passwordIndex] == null ? '' : row[passwordIndex]).trim() === String(password == null ? '' : password).trim();
   });
   if (rowIndex < 0) throw new Error('교사 로그인 확인에 실패했습니다.');
   const row = values[rowIndex + 1];
@@ -1015,7 +1189,7 @@ function changeTeacherPassword_(request) {
   const account = accountWithPermissions_(request.loginId, request.currentPassword);
   const nextPassword = String(request.newPassword || '');
   if (nextPassword.length < 4) throw new Error('새 비밀번호는 4자 이상으로 입력하세요.');
-  account.sheet.getRange(account.rowNumber, account.passwordIndex + 1).setValue(nextPassword);
+  setPasswordCell_(account.sheet.getRange(account.rowNumber, account.passwordIndex + 1), nextPassword);
   return json_({ success: true });
 }
 
