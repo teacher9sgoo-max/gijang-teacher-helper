@@ -1201,11 +1201,14 @@ const SHEET_ID = '1_qIRbv44zWd9yv4yNzTQ0frXTvILl2-iejzPqhF8i2w';
 const SHEET_EDIT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
 // 시트에 새 행을 "쓰기"위한 구글 앱스크립트 웹앱 주소. 아래 안내에 따라 배포한 뒤,
 // 나온 URL(.../exec 로 끝남)을 여기에 붙여넣어야 대시보드에서 바로 추가하기가 동작합니다.
-const WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbxucaf195_4iYTZOyTur0N7QMGUUAGoqUquJp26gXRBmqOnCDlABHl-HlIyTB1ibvew/exec';
+const WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbxk1HKVESc5TubOqq9kTuCqFTiqyk9hD1cSO1-SlL_vv75UTtt3Rlwwt0UX00mj6B8g/exec';
 const LEGACY_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbxGOJ4oPC2W1qqcger47LhvgDFhVuLLCBxoottOvT09pwp3-wyA91i6Yustckm7IG1Z/exec';
 const OLDER_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbzCnG_GceglJA6pFfxX5EzEIPEoHvhGK5gyfRHpe4nNNyNATXJi39QEWVOEAL_rC3Uc/exec';
 let ACTIVE_SHEET_ID = SHEET_ID;
-let ACTIVE_WRITE_API_URL = WRITE_API_URL;
+// dashboard-config.js에 window.GIJANG_WRITE_API_URL 값을 적어두면, 아래 하드코딩된 WRITE_API_URL보다
+// 그 값을 우선 사용합니다. 즉 앞으로 Apps Script 주소가 바뀌면, index.html을 다시 받을 필요 없이
+// dashboard-config.js 한 줄만 고쳐서 GitHub에 올리면 바로 반영됩니다.
+let ACTIVE_WRITE_API_URL = (typeof window!=='undefined' && window.GIJANG_WRITE_API_URL) ? String(window.GIJANG_WRITE_API_URL).trim().replace(/\/$/,'') : WRITE_API_URL;
 let ACTIVE_TIMETABLE_OFFICIAL_URL = 'http://comci.net:4082/th';
 let ACTIVE_WINDOWS_INSTALLER_URL = 'https://github.com/teacher9sgoo-max/gijang-teacher-helper/releases/latest';
 
@@ -1353,18 +1356,26 @@ async function completeLogin(){
   const id = document.getElementById('login-id-input').value.trim();
   const pw = document.getElementById('login-pw-input').value;
   if(!id || !pw){ errEl.textContent = '아이디와 비밀번호를 모두 입력해주세요.'; return; }
-  // 페이지 로딩 때 이미 구글 시트에서 메모리에 읽은 계정은 즉시 확인합니다.
-  // 서버 왕복은 계정 목록이 아직 없거나 일치하는 계정이 없을 때만 사용합니다.
-  const quickAccount=Array.isArray(teacherAccounts)?teacherAccounts.find(a=>a.id===id && a.password===pw):null;
-  if(quickAccount){ establishLogin_(quickAccount,pw); return; }
-  if(!teacherAccountsLoadedFromSheet){
-    // 교사 로그인은 구글 시트 ‘교사 아이디 비번’ 원본만 사용합니다.
-    // 시간표 서버는 인증에 관여하지 않으므로, 서버 지연이 로그인 실패로 보이지 않게 합니다.
-    errEl.textContent = '회원 명부를 불러오는 중입니다. 잠시 후 다시 시도하거나 새로고침하세요.';
-    return;
+  // 로그인은 브라우저가 시트를 직접 비교하지 않고, Apps Script 서버에 물어봐서 확인합니다.
+  // 비밀번호 자체는 서버 밖으로 절대 나오지 않습니다(성공/실패만 돌려받음).
+  const url = activeWriteApiUrl();
+  if(!url){ errEl.textContent = '로그인 서버 주소가 설정되지 않았습니다. 관리자에게 문의하세요.'; return; }
+  errEl.textContent = '';
+  const submitBtn = document.getElementById('login-submit-btn');
+  if(submitBtn){ submitBtn.disabled = true; submitBtn.dataset.originalText = submitBtn.textContent; submitBtn.textContent = '확인 중...'; }
+  try{
+    const res = await fetch(url, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action:'login', loginId:id, password:pw})});
+    const data = await res.json();
+    if(data && data.success && data.account){
+      establishLogin_(data.account, pw);
+    } else {
+      errEl.textContent = (data && data.error) || '아이디 또는 비밀번호가 올바르지 않습니다.';
+    }
+  }catch(error){
+    errEl.textContent = '로그인 서버에 연결하지 못했습니다. 네트워크 상태를 확인 후 다시 시도해주세요.';
+  }finally{
+    if(submitBtn){ submitBtn.disabled=false; submitBtn.textContent=submitBtn.dataset.originalText||'로그인'; }
   }
-  errEl.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
-  return;
 }
 function establishLogin_(account,pw){
   const errEl = document.getElementById('login-error');
@@ -1527,53 +1538,38 @@ function sameDay(a,b){ return dateKey(a)===dateKey(b); }
 function stripTime(d){ const n=new Date(d); n.setHours(0,0,0,0); return n; }
 
 /* ---------------- fetch + parse ---------------- */
-let __jsonpSeq = 0;
-function fetchSheetRows(name){
-  return new Promise((resolve, reject)=>{
-    const cbName = '__gvizCb' + (__jsonpSeq++) + '_' + Date.now();
-    let script;
-    const timeoutId = setTimeout(()=>{
-      cleanup();
-      reject(new Error(`'${name}' 시트 응답이 없습니다 (제한시간 초과). docs.google.com 접속이 가능한 네트워크인지 확인해주세요.`));
-    }, 10000);
-    function cleanup(){
-      clearTimeout(timeoutId);
-      delete window[cbName];
-      if(script && script.parentNode) script.parentNode.removeChild(script);
-    }
-    window[cbName] = function(response){
-      cleanup();
-      try{
-        if(!response || response.status === 'error'){
-          const msg = (response && response.errors && response.errors[0] && (response.errors[0].detailed_message || response.errors[0].message)) || '알 수 없는 오류';
-          reject(new Error(`'${name}' 시트를 불러오지 못했습니다: ${msg} (탭 이름/공유 설정을 확인해주세요)`));
-          return;
-        }
-        const table = response.table;
-        const header = table.cols.map(c=> c.label || '');
-        const rows = [header];
-        table.rows.forEach(r=>{
-          const row = table.cols.map((_,i)=>{
-            const cell = r.c ? r.c[i] : null;
-            if(!cell) return '';
-            if(cell.f !== undefined && cell.f !== null && cell.f !== '') return String(cell.f);
-            if(cell.v !== undefined && cell.v !== null) return String(cell.v);
-            return '';
-          });
-          rows.push(row);
-        });
-        resolve(rows);
-      }catch(e){ reject(e); }
-    };
-    const url = `https://docs.google.com/spreadsheets/d/${ACTIVE_SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(name)}&headers=1&tqx=out:json;responseHandler:${cbName}&_=${Date.now()}`;
-    script = document.createElement('script');
-    script.src = url;
-    script.onerror = ()=>{
-      cleanup();
-      reject(new Error(`'${name}' 시트에 연결할 수 없습니다. docs.google.com 접속이 막혀있거나, 시트 공유 설정을 확인해주세요.`));
-    };
-    document.head.appendChild(script);
-  });
+// 시트 데이터는 이제 브라우저가 구글에 직접(gviz, 공개 읽기) 묻지 않고,
+// Apps Script 서버를 거쳐서 가져옵니다. 이렇게 하면 스프레드시트를 비공개로
+// 돌려놔도 앱은 정상 동작하고, '교사 아이디 비번' 시트는 서버가 비밀번호 칸을
+// 아예 빼고 돌려주기 때문에 비밀번호가 브라우저에 노출되지 않습니다.
+async function fetchSheetRows(name){
+  const url = activeWriteApiUrl();
+  if(!url) throw new Error(`'${name}' 시트를 불러올 서버 주소가 없습니다.`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(()=>controller.abort(), 15000);
+  let res;
+  try{
+    res = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'sheetRead', sheetName:name, loginId: currentAccountId||'', password: currentLoginPassword||''}),
+      signal: controller.signal
+    });
+  }catch(networkError){
+    throw new Error(`'${name}' 시트 응답이 없습니다 (네트워크 오류 또는 제한시간 초과). 잠시 후 다시 시도해주세요.`);
+  }finally{
+    clearTimeout(timeoutId);
+  }
+  let data;
+  try{
+    data = await res.json();
+  }catch(parseError){
+    throw new Error(`'${name}' 시트 응답을 해석하지 못했습니다. Apps Script가 최신 코드로 배포됐는지 확인해주세요.`);
+  }
+  if(!data || !data.success){
+    throw new Error((data && data.error) || `'${name}' 시트를 불러오지 못했습니다.`);
+  }
+  return data.rows || [];
 }
 
 function renderTimetableCacheTab(rows=latestTimetableCacheRows, message=''){
