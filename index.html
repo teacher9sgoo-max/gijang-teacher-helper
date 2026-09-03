@@ -1889,7 +1889,13 @@ async function saveQuickLinks_(nextLinks){
 async function loadAll(){
   showStatus('loading');
   let timetableRows=[];
-  const sheetNames=['학사일정','담임교사 전달사항','전체 명렬표','급식당번','시간표 캐시','교사 아이디 비번','조별 반복 당번표','수업 진도','학생 활동 기록','교사 권한 관리','교사 바로가기 링크'];
+  // '수업 진도'·'학생 활동 기록'은 학생 개인정보라서, 서버(code.js의 SENSITIVE_READ_SHEETS)가
+  // 로그인 정보 없이는 거부합니다. 로그인 전에도 매번 실행되는 이 배치 요청에 이 두 시트를
+  // 함께 넣으면, 서버가 요청 전체를 실패로 처리해서 달력·전달사항·명렬표 등 나머지 시트까지
+  // 못 불러오는 원인이 되었습니다(그 뒤 개별 요청으로 재시도하며 늦게 복구됨).
+  // 이 두 시트는 로그인 후 syncPersonalRecordsFromServer_()가 loginId·password를 실어
+  // 따로 정상적으로 가져오므로, 여기서는 빼도 됩니다.
+  const sheetNames=['학사일정','담임교사 전달사항','전체 명렬표','급식당번','시간표 캐시','교사 아이디 비번','조별 반복 당번표','교사 권한 관리','교사 바로가기 링크'];
   // 한 시트의 지연·실패가 회원 명부 로그인까지 막지 않도록 하되, 요청 자체는 한 번에 모아서 보냅니다.
   const sheetResults=await fetchSheetRowsBatch(sheetNames);
   const rowsAt=index=>sheetResults[index]?.status==='fulfilled'&&Array.isArray(sheetResults[index].value)?sheetResults[index].value:[];
@@ -1900,12 +1906,12 @@ async function loadAll(){
   buildDuty(rowsAt(3));
   timetableRows=rowsAt(4);
   latestTimetableCacheRows=timetableRows;
-  buildTeacherAccounts(rowsAt(5), rowsAt(9));
+  buildTeacherAccounts(rowsAt(5), rowsAt(7));
   buildWeeklyDutyRotation(rowsAt(6));
-  progressSheetRows=rowsAt(7);
-  activitySheetRows=rowsAt(8);
-  permissionSheetRows=rowsAt(9);
-  buildQuickLinks(rowsAt(10));
+  // 수업 진도·학생 활동 기록은 더 이상 이 배치에 없으므로(위 설명 참고),
+  // 로그인 전에는 빈 배열 그대로 두고 로그인 후 syncPersonalRecordsFromServer_()가 채웁니다.
+  permissionSheetRows=rowsAt(7);
+  buildQuickLinks(rowsAt(8));
   if(currentAccountId) hydratePersonalCloudRecords_();
   hideStatus();
   document.getElementById('sync-label').textContent = failedSheets.length ? `일부 자료 지연 · ${failedSheets.join(', ')}` : '마지막 업데이트 ' + new Date().toLocaleTimeString('ko-KR');

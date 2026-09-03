@@ -1035,7 +1035,6 @@ function ensurePermissionColumns_(sheet) {
 function accountWithPermissions_(loginId, password) {
   const sheet = rosterSheet_();
   const headers = sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getDisplayValues()[0].map(String);
-  const permissionSheet = ensureTeacherPermissionSheet_(sheet);
   const normalized = headers.map(normalizeHeader_);
   const idIndex = normalized.findIndex(function(header) { return ['아이디','교사아이디'].indexOf(header) >= 0; });
   const passwordIndex = normalized.findIndex(function(header) { return ['비밀번호','비번','패스워드'].indexOf(header) >= 0; });
@@ -1045,6 +1044,11 @@ function accountWithPermissions_(loginId, password) {
   const rowIndex = values.slice(1).findIndex(function(row) {
     return String(row[idIndex] == null ? '' : row[idIndex]).trim() === String(loginId == null ? '' : loginId).trim() && String(row[passwordIndex] == null ? '' : row[passwordIndex]).trim() === String(password == null ? '' : password).trim();
   });
+  // 아이디·비밀번호가 틀리면 여기서 바로 끝냅니다. (예전 코드는 이 확인보다 먼저
+  // ensureTeacherPermissionSheet_()를 호출해서 '교사 권한 관리' 시트를 매번 통째로
+  // 다시 쓰고 있었습니다. 로그인이 맞든 틀리든, 심지어 로그인 전 화면을 채우는
+  // 자동 요청에서도 매번 시트 쓰기가 일어나 로그인이 느려지고, 여러 명이 동시에
+  // 접속하면 같은 시트를 동시에 덮어써서 충돌·오류가 나던 원인이었습니다.)
   if (rowIndex < 0) throw new Error('교사 로그인 확인에 실패했습니다.');
   const row = values[rowIndex + 1];
   const role = roleIndex >= 0 ? String(row[roleIndex] || '').trim().toLowerCase() : '';
@@ -1052,13 +1056,28 @@ function accountWithPermissions_(loginId, password) {
   const realName = nameIndex >= 0 ? String(row[nameIndex] || '').trim() : loginName;
   const isMaster = /^(마스터|master|admin|관리자)$/i.test(loginName) || /^(마스터|master|admin|관리자)$/i.test(realName) || ['admin','master','관리자','마스터'].indexOf(role) >= 0;
   const permissions = {};
-  const permissionValues = permissionSheet.getDataRange().getDisplayValues();
-  const permissionRow = permissionValues.slice(1).find(function(permissionRowData) { return String(permissionRowData[0] || '').trim() === loginName; });
+  const permissionRow = readTeacherPermissionRow_(loginName);
   Object.keys(PERMISSION_HEADERS).forEach(function(key) {
     const col = ['학사일정수정', '전달사항수정', '급식당번수정'].indexOf(PERMISSION_HEADERS[key]) + 2;
     permissions[key] = isMaster || !!(permissionRow && normalizePermission_(permissionRow[col]));
   });
   return { sheet: sheet, headers: headers, rowNumber: rowIndex + 2, loginId: loginName, realName: realName, isMaster: isMaster, permissions: permissions, passwordIndex: passwordIndex };
+}
+
+// 읽기 전용 조회입니다. ensureTeacherPermissionSheet_()와 달리 시트를 새로 만들거나
+// 내용을 다시 쓰지 않습니다 — 권한 시트 동기화(행 추가·서식)는 관리자가 메뉴에서
+// '교사 권한 관리 시트 만들기·동기화'를 직접 실행할 때만 일어나야 합니다.
+function readTeacherPermissionRow_(loginName) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(configuredSpreadsheetId_());
+    const sheet = spreadsheet.getSheetByName(String(TEACHER_PERMISSION_SHEET_NAME).trim());
+    if (!sheet || sheet.getLastRow() < 2) return null;
+    const width = Math.max(5, sheet.getLastColumn());
+    const values = sheet.getRange(1, 1, sheet.getLastRow(), width).getDisplayValues();
+    return values.slice(1).find(function(row) { return String(row[0] || '').trim() === loginName; }) || null;
+  } catch (e) {
+    return null;
+  }
 }
 
 function requirePermission_(request, permission) {
