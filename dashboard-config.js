@@ -6,5 +6,5 @@
       index.html을 다시 받을 필요 없이 아래 줄의 주소만 새 주소로 바꿔서
       GitHub에 올리면 바로 반영됩니다. (앞줄의 // 를 지우고 주소를 넣어주세요)
 */
-// window.GIJANG_WRITE_API_URL = 'https://script.google.com/macros/library/d/1zl_ayZmVMLcmgE-AfxN9lOfdppmFJwg-jvJNBHPMBv9snjvC6fz6vUrQ/32';
+// window.GIJANG_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycby4cPpIOv4szV-xQB8OaEYr4rWq2Qh84A6mhld--nTWCWDqxpNXqYsK9qdlglB7jbjm/exec';
 // window.GIJANG_TIMETABLE_SERVER_URL = '';
