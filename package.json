@@ -1,6 +1,6 @@
 {
   "name": "gijang-teacher-helper",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "기장중학교 교무 도우미 Windows 앱",
   "main": "electron-main.cjs",
   "author": "기장중학교",
