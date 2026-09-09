@@ -1246,8 +1246,8 @@ const SHEET_EDIT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`
 // 시트에 새 행을 "쓰기"위한 구글 앱스크립트 웹앱 주소. 아래 안내에 따라 배포한 뒤,
 // 나온 URL(.../exec 로 끝남)을 여기에 붙여넣어야 대시보드에서 바로 추가하기가 동작합니다.
 const WRITE_API_URL = 'https://script.google.com/macros/s/AKfycby4cPpIOv4szV-xQB8OaEYr4rWq2Qh84A6mhld--nTWCWDqxpNXqYsK9qdlglB7jbjm/exec';
-const LEGACY_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbxGOJ4oPC2W1qqcger47LhvgDFhVuLLCBxoottOvT09pwp3-wyA91i6Yustckm7IG1Z/exec';
-const OLDER_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbzCnG_GceglJA6pFfxX5EzEIPEoHvhGK5gyfRHpe4nNNyNATXJi39QEWVOEAL_rC3Uc/exec';
+const LEGACY_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbxucaf195_4iYTZOyTur0N7QMGUUAGoqUquJp26gXRBmqOnCDlABHl-HlIyTB1ibvew/exec';
+const OLDER_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbxGOJ4oPC2W1qqcger47LhvgDFhVuLLCBxoottOvT09pwp3-wyA91i6Yustckm7IG1Z/exec';
 let ACTIVE_SHEET_ID = SHEET_ID;
 // dashboard-config.js에 window.GIJANG_WRITE_API_URL 값을 적어두면, 아래 하드코딩된 WRITE_API_URL보다
 // 그 값을 우선 사용합니다. 즉 앞으로 Apps Script 주소가 바뀌면, index.html을 다시 받을 필요 없이
@@ -4421,7 +4421,7 @@ async function shareGijangApp(){
   function showAlerts(){
     const p=preferences(); const message=[];const today=new Date();const dow=today.getDay()-1;
     if(p.dutyAlert&&dow>=0&&dow<=4){const g=weeklyDutyRotation.activeGroup,rows=g?(weeklyDutyRotation.groups[g]||[]):[];const names=rows.map(function(r){return (r.days||[])[dow]||'';}).filter(function(name){return String(name).replace(/\s/g,'').includes(String(currentUser||'').replace(/\s/g,''));});if(names.length)message.push('오늘은 '+g+'조 급식 당번입니다.');}
-    if(p.calendarAlert){const todays=(events||[]).filter(function(ev){const d=parseDateFlexible(ev.date);return d&&dateKey(d)===dateKey(today);});if(todays.length)message.push('오늘 학사일정: '+todays.map(function(x){return x.title||x.detail;}).join(', '));}
+    if(p.calendarAlert){const todaysList=(calendarEvents&&calendarEvents[dateKey(today)])||[];const titles=todaysList.map(function(x){return x.title||x.detail;}).filter(Boolean);if(titles.length)message.push('오늘 학사일정: '+titles.join(', '));}
     if(p.noticeAlert){const live=(notices||[]).filter(function(n){return (!n.start||stripTime(n.start)<=stripTime(today))&&(!n.end||stripTime(n.end)>=stripTime(today));});if(live.length)message.push('현재 담임 전달사항 '+live.length+'건이 있습니다.');}
     const key='gijang_login_alert_seen::'+(currentAccountId||'')+'::'+dateKey(today);if(message.length&&!sessionStorage.getItem(key)){sessionStorage.setItem(key,'1');setTimeout(function(){alert(message.join('\n'));},350);}
   }
@@ -4431,15 +4431,23 @@ async function shareGijangApp(){
     const banner=document.getElementById('today-summary-banner'), list=document.getElementById('tsb-list');
     if(!banner||!list||!currentAccountId) return;
     const items=[]; const today=new Date(); const dow=today.getDay()-1;
-    if(dow>=0&&dow<=4){
-      const g=weeklyDutyRotation.activeGroup, rows=g?(weeklyDutyRotation.groups[g]||[]):[];
-      const mine=rows.map(function(r){return (r.days||[])[dow]||'';}).filter(function(name){return String(name).replace(/\s/g,'').includes(String(currentUser||'').replace(/\s/g,''));});
-      if(mine.length) items.push('🍱 오늘은 '+g+'조 급식 당번입니다.');
-    }
-    const todays=(events||[]).filter(function(ev){const d=parseDateFlexible(ev.date);return d&&dateKey(d)===dateKey(today);});
-    if(todays.length) items.push('🗓️ 오늘 학사일정: '+todays.map(function(x){return x.title||x.detail;}).join(', '));
-    const live=(notices||[]).filter(function(n){return (!n.start||stripTime(n.start)<=stripTime(today))&&(!n.end||stripTime(n.end)>=stripTime(today));});
-    if(live.length) items.push('📣 담임 전달사항 '+live.length+'건이 진행 중입니다.');
+    try{
+      if(dow>=0&&dow<=4){
+        const g=weeklyDutyRotation.activeGroup, rows=g?(weeklyDutyRotation.groups[g]||[]):[];
+        const mine=rows.map(function(r){return (r.days||[])[dow]||'';}).filter(function(name){return String(name).replace(/\s/g,'').includes(String(currentUser||'').replace(/\s/g,''));});
+        if(mine.length) items.push('🍱 오늘은 '+g+'조 급식 당번입니다.');
+      }
+    }catch(e){}
+    try{
+      // 학사일정은 'calendarEvents'에 날짜(YYYY-MM-DD) 키로 저장되어 있습니다.
+      const todaysList=(calendarEvents&&calendarEvents[dateKey(today)])||[];
+      const titles=todaysList.map(function(x){return x.title||x.detail;}).filter(Boolean);
+      if(titles.length) items.push('🗓️ 오늘 학사일정: '+titles.join(', '));
+    }catch(e){}
+    try{
+      const live=(notices||[]).filter(function(n){return (!n.start||stripTime(n.start)<=stripTime(today))&&(!n.end||stripTime(n.end)>=stripTime(today));});
+      if(live.length) items.push('📣 담임 전달사항 '+live.length+'건이 진행 중입니다.');
+    }catch(e){}
     if(!items.length){ banner.classList.remove('show'); list.innerHTML=''; return; }
     list.innerHTML=items.map(function(text){return '<li>'+escapeHtml(text)+'</li>';}).join('');
     banner.classList.add('show');
