@@ -55,7 +55,8 @@ body{
 }
 .mono{font-family:'JetBrains Mono', monospace;}
 
-#app{max-width:1180px; margin:0 auto; padding:32px 24px 70px; width:100%; zoom:1.2;}
+#app{max-width:1180px; margin:0 auto; padding:32px 24px 70px; width:100%;}
+html.large-mode #app{zoom:1.2;}
 
 /* ---------- Header / Nav ---------- */
 .top{
@@ -109,6 +110,17 @@ nav.tabs button{
 }
 nav.tabs button.active{color:var(--text); background:var(--surface); box-shadow:var(--shadow-sm);}
 nav.tabs button:hover:not(.active){color:var(--text);}
+nav.tabs .tab-sep{width:1px; align-self:stretch; background:rgba(0,0,0,.09); margin:6px 3px; flex:0 0 auto;}
+@media(max-width:900px){nav.tabs .tab-sep{display:none;}}
+
+#today-summary-banner{display:none; align-items:flex-start; gap:12px; background:linear-gradient(155deg, var(--nameplate-2), var(--nameplate)); color:#FBF8EF; padding:16px 20px; border-radius:var(--radius-md); margin-bottom:18px; box-shadow:var(--shadow-sm);}
+#today-summary-banner.show{display:flex;}
+#today-summary-banner .tsb-icon{font-size:20px; line-height:1; flex-shrink:0;}
+#today-summary-banner .tsb-body{flex:1; min-width:0;}
+#today-summary-banner .tsb-title{font-weight:700; font-size:13px; color:rgba(251,248,239,.75); margin-bottom:4px;}
+#today-summary-banner .tsb-list{font-size:14px; line-height:1.6; margin:0; padding:0; list-style:none;}
+#today-summary-banner .tsb-empty{color:rgba(251,248,239,.6); font-size:13px;}
+.user-badge-admin{color:#c9dc58!important; font-weight:800;}
 
 /* ---------- Loading / error ---------- */
 #status-banner{display:none; align-items:center; gap:10px; background:#FFF4E5; border:1px solid #FFD9A6; color:#8A5A00; padding:12px 16px; border-radius:var(--radius-md); margin-bottom:18px; font-size:13.5px;}
@@ -593,6 +605,18 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
 </style>
 </head>
 <body>
+<script>
+// 화면 확대(120%) 여부는 사용자가 설정에서 켜고 끌 수 있습니다. 값이 없으면(처음 방문)
+// 기존과 동일하게 켜진 상태로 시작합니다. 화면이 그려지기 전에 최대한 빨리 적용해서
+// 화면이 순간적으로 커졌다 작아지는 깜빡임을 막습니다.
+(function(){
+  try{
+    var v = localStorage.getItem('gijang_large_mode_v1');
+    var on = v===null ? true : v==='1';
+    document.documentElement.classList.toggle('large-mode', on);
+  }catch(e){ document.documentElement.classList.add('large-mode'); }
+})();
+</script>
 <div id="app">
 
   <div class="top">
@@ -615,16 +639,22 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
 
   <div id="quick-links-banner"></div>
 
+  <div id="today-summary-banner"><span class="tsb-icon">📌</span><div class="tsb-body"><div class="tsb-title">오늘 확인할 사항</div><ul class="tsb-list" id="tsb-list"></ul></div></div>
+
   <nav class="tabs">
     <button data-tab="dashboard" class="active">대시보드</button>
+    <span class="tab-sep" aria-hidden="true"></span>
     <button data-tab="progress">수업 진도</button>
     <button data-tab="activity">학생 활동 기록</button>
+    <span class="tab-sep" aria-hidden="true"></span>
     <button data-tab="roster">명렬 보기</button>
     <button data-tab="picker">학생 뽑기</button>
     <button data-tab="seat">자리 뽑기</button>
     <button data-tab="group">모둠 뽑기</button>
+    <span class="tab-sep" aria-hidden="true"></span>
     <button data-tab="teacher-timetable">교사 시간표</button>
     <button data-tab="timetable-cache" id="timetable-cache-tab-btn" style="display:none">시간표 캐시</button>
+    <span class="tab-sep" aria-hidden="true" id="admin-tab-sep" style="display:none"></span>
     <button data-tab="members" id="members-tab-btn" style="display:none">회원 명부 관리</button>
   </nav>
 
@@ -1215,7 +1245,7 @@ const SHEET_ID = '1_qIRbv44zWd9yv4yNzTQ0frXTvILl2-iejzPqhF8i2w';
 const SHEET_EDIT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
 // 시트에 새 행을 "쓰기"위한 구글 앱스크립트 웹앱 주소. 아래 안내에 따라 배포한 뒤,
 // 나온 URL(.../exec 로 끝남)을 여기에 붙여넣어야 대시보드에서 바로 추가하기가 동작합니다.
-const WRITE_API_URL = 'https://script.google.com/macros/s/AKfycby4cPpIOv4szV-xQB8OaEYr4rWq2Qh84A6mhld--nTWCWDqxpNXqYsK9qdlglB7jbjm/exec';
+const WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbxucaf195_4iYTZOyTur0N7QMGUUAGoqUquJp26gXRBmqOnCDlABHl-HlIyTB1ibvew/exec';
 const LEGACY_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbxGOJ4oPC2W1qqcger47LhvgDFhVuLLCBxoottOvT09pwp3-wyA91i6Yustckm7IG1Z/exec';
 const OLDER_WRITE_API_URL = 'https://script.google.com/macros/s/AKfycbzCnG_GceglJA6pFfxX5EzEIPEoHvhGK5gyfRHpe4nNNyNATXJi39QEWVOEAL_rC3Uc/exec';
 let ACTIVE_SHEET_ID = SHEET_ID;
@@ -1341,6 +1371,8 @@ async function attemptRememberedLogin_(id, pw){
   // 저장된 비밀번호가 더는 유효하지 않으면(비번 변경 등) 기억된 정보를 지우고 다시 로그인하게 합니다.
   try{ localStorage.removeItem(USER_STORAGE_KEY); }catch(e){}
   showLoginModal();
+  const errEl=document.getElementById('login-error');
+  if(errEl) errEl.textContent='이전 로그인 정보가 만료되어 다시 로그인해주세요.';
 }
 function showLoginModal(){
   document.getElementById('login-error').textContent = '';
@@ -1350,7 +1382,10 @@ function showLoginModal(){
 function hideLoginModal(){
   document.getElementById('login-modal').classList.remove('show');
 }
-function updateUserBadge(){ document.getElementById('current-user-badge').textContent=currentUser?`👤 ${currentUser}${currentRole==='admin'?' · 마스터':''}`:''; }
+function updateUserBadge(){ const badge=document.getElementById('current-user-badge'); badge.textContent=currentUser?`👤 ${currentUser}${currentRole==='admin'?' · 마스터':''}`:''; badge.classList.toggle('user-badge-admin', currentRole==='admin'); }
+const LARGE_MODE_KEY='gijang_large_mode_v1';
+function isLargeModeOn_(){ try{ const v=localStorage.getItem(LARGE_MODE_KEY); return v===null ? true : v==='1'; }catch(e){ return true; } }
+function setLargeMode_(on){ try{ localStorage.setItem(LARGE_MODE_KEY, on?'1':'0'); }catch(e){} document.documentElement.classList.toggle('large-mode', !!on); }
 async function syncRemoteMemberList_(){
   if(!getTimetableServerUrl() || !serverSessionToken) return;
   const list=document.getElementById('member-list'); if(list) list.innerHTML='<div class="empty-note">교사 아이디·비번 시트에서 회원 명부를 불러오는 중입니다.</div>';
@@ -1369,6 +1404,7 @@ function refreshMemberAccess(){
   if(memberTab) memberTab.style.display=isAdmin?'':'none';
   if(cacheTab) cacheTab.style.display=isAdmin?'':'none';
   if(permissionsTab) permissionsTab.style.display=isAdmin?'':'none';
+  const adminSep=document.getElementById('admin-tab-sep'); if(adminSep) adminSep.style.display=isAdmin?'':'none';
   // 일반 교사가 이전 주소·상태에서 캐시 탭을 보고 있었다면 대시보드로 되돌립니다.
   const cachePanel=document.getElementById('tab-timetable-cache');
   if(!isAdmin && cachePanel && cachePanel.classList.contains('active')){
@@ -4334,9 +4370,19 @@ async function shareGijangApp(){
     const root=document.getElementById('settings-content');if(!root)return;
     updateDashboardEditControls();
     const p=preferences();
-    root.innerHTML='<div class="settings-grid"><article class="card"><h3>개인 계정 설정</h3><p class="progress-note">현재 로그인 계정의 비밀번호와 알림 방식을 변경합니다.</p><label class="field">현재 비밀번호<input id="my-current-password" type="password" autocomplete="current-password"></label><label class="field">새 비밀번호<input id="my-new-password" type="password" minlength="4" autocomplete="new-password"></label><label class="field">새 비밀번호 확인<input id="my-new-password-confirm" type="password" minlength="4" autocomplete="new-password"></label><button class="btn primary" id="my-password-save" type="button">비밀번호 변경</button><div id="my-password-status" class="settings-message"></div></article><article class="card"><h3>접속 알림</h3>'+settingRow('pref-duty-alert','오늘 급식 당번 알림','접속 시 오늘 내가 담당한 급식 당번이 있으면 팝업으로 알려줍니다.')+settingRow('pref-calendar-alert','오늘 학사일정 알림','접속 시 오늘의 학사일정이 있으면 알려줍니다.')+settingRow('pref-notice-alert','담임 전달사항 알림','접속 시 현재 적용 중인 담임교사 전달사항이 있으면 알려줍니다.')+'<button class="btn primary" id="my-pref-save" type="button" style="margin-top:14px">알림 설정 저장</button><div id="my-pref-status" class="settings-message"></div></article></div><div id="duty-settings-area"></div>';
+    root.innerHTML='<div class="settings-grid"><article class="card"><h3>개인 계정 설정</h3><p class="progress-note">현재 로그인 계정의 비밀번호와 알림 방식을 변경합니다.</p><label class="field">현재 비밀번호<input id="my-current-password" type="password" autocomplete="current-password"></label><label class="field">새 비밀번호<input id="my-new-password" type="password" minlength="4" autocomplete="new-password"></label><label class="field">새 비밀번호 확인<input id="my-new-password-confirm" type="password" minlength="4" autocomplete="new-password"></label><button class="btn primary" id="my-password-save" type="button">비밀번호 변경</button><div id="my-password-status" class="settings-message"></div></article><article class="card"><h3>접속 알림</h3>'+settingRow('pref-duty-alert','오늘 급식 당번 알림','접속 시 오늘 내가 담당한 급식 당번이 있으면 팝업으로 알려줍니다.')+settingRow('pref-calendar-alert','오늘 학사일정 알림','접속 시 오늘의 학사일정이 있으면 알려줍니다.')+settingRow('pref-notice-alert','담임 전달사항 알림','접속 시 현재 적용 중인 담임교사 전달사항이 있으면 알려줍니다.')+'<button class="btn primary" id="my-pref-save" type="button" style="margin-top:14px">알림 설정 저장</button><div id="my-pref-status" class="settings-message"></div></article><article class="card"><h3>화면 표시</h3>'+settingRow('pref-large-mode','큰 화면 모드(120% 확대)','화면 전체를 조금 더 크게 표시합니다. 노트북이나 작은 창에서는 꺼두면 표·시간표가 더 잘 보입니다.')+'<div id="my-display-status" class="settings-message"></div></article></div><div id="duty-settings-area"></div>';
     document.getElementById('pref-duty-alert').checked=p.dutyAlert!==false;document.getElementById('pref-calendar-alert').checked=!!p.calendarAlert;document.getElementById('pref-notice-alert').checked=!!p.noticeAlert;
     document.getElementById('my-pref-save').onclick=function(){savePreferences({dutyAlert:document.getElementById('pref-duty-alert').checked,calendarAlert:document.getElementById('pref-calendar-alert').checked,noticeAlert:document.getElementById('pref-notice-alert').checked});const s=document.getElementById('my-pref-status');s.className='settings-message ok';s.textContent='이 기기의 알림 설정을 저장했습니다.';alert('완료되었습니다.\n이 기기의 알림 설정을 저장했습니다.');};
+    const largeModeBox=document.getElementById('pref-large-mode');
+    if(largeModeBox){
+      largeModeBox.checked=isLargeModeOn_();
+      largeModeBox.onchange=function(){
+        setLargeMode_(largeModeBox.checked);
+        const s=document.getElementById('my-display-status');
+        s.className='settings-message ok';
+        s.textContent='이 기기에 화면 표시 설정을 저장했습니다.';
+      };
+    }
     document.getElementById('my-password-save').onclick=changeMyPassword;
     renderDutySettings();
   }
@@ -4379,8 +4425,28 @@ async function shareGijangApp(){
     if(p.noticeAlert){const live=(notices||[]).filter(function(n){return (!n.start||stripTime(n.start)<=stripTime(today))&&(!n.end||stripTime(n.end)>=stripTime(today));});if(live.length)message.push('현재 담임 전달사항 '+live.length+'건이 있습니다.');}
     const key='gijang_login_alert_seen::'+(currentAccountId||'')+'::'+dateKey(today);if(message.length&&!sessionStorage.getItem(key)){sessionStorage.setItem(key,'1');setTimeout(function(){alert(message.join('\n'));},350);}
   }
+  // 팝업(showAlerts)과 별개로, 대시보드 상단에는 오늘 확인할 사항을 항상 조용히 띄워둡니다.
+  // (한 번 팝업을 닫고 나면 다시 볼 방법이 없던 문제를 보완합니다.)
+  function renderTodaySummary_(){
+    const banner=document.getElementById('today-summary-banner'), list=document.getElementById('tsb-list');
+    if(!banner||!list||!currentAccountId) return;
+    const items=[]; const today=new Date(); const dow=today.getDay()-1;
+    if(dow>=0&&dow<=4){
+      const g=weeklyDutyRotation.activeGroup, rows=g?(weeklyDutyRotation.groups[g]||[]):[];
+      const mine=rows.map(function(r){return (r.days||[])[dow]||'';}).filter(function(name){return String(name).replace(/\s/g,'').includes(String(currentUser||'').replace(/\s/g,''));});
+      if(mine.length) items.push('🍱 오늘은 '+g+'조 급식 당번입니다.');
+    }
+    const todays=(events||[]).filter(function(ev){const d=parseDateFlexible(ev.date);return d&&dateKey(d)===dateKey(today);});
+    if(todays.length) items.push('🗓️ 오늘 학사일정: '+todays.map(function(x){return x.title||x.detail;}).join(', '));
+    const live=(notices||[]).filter(function(n){return (!n.start||stripTime(n.start)<=stripTime(today))&&(!n.end||stripTime(n.end)>=stripTime(today));});
+    if(live.length) items.push('📣 담임 전달사항 '+live.length+'건이 진행 중입니다.');
+    if(!items.length){ banner.classList.remove('show'); list.innerHTML=''; return; }
+    list.innerHTML=items.map(function(text){return '<li>'+escapeHtml(text)+'</li>';}).join('');
+    banner.classList.add('show');
+  }
+  window.renderTodaySummary_=renderTodaySummary_;
   function updateMasterPermissionTab(){const tab=document.getElementById('permissions-tab-btn');if(tab)tab.style.display=isMasterUser()?'':'none';}
-  establishLogin_=function(account,pw){originalEstablishLogin(account,pw);setTimeout(function(){updateMasterPermissionTab();renderSettings();showAlerts();},250);};
+  establishLogin_=function(account,pw){originalEstablishLogin(account,pw);setTimeout(function(){updateMasterPermissionTab();renderSettings();showAlerts();renderTodaySummary_();},250);};
   openDayModal=function(date,evs,holiday){originalOpenDayModal(date,evs,holiday);if(!permissionFor('calendar'))return;const body=document.getElementById('day-modal-body');let eventIndex=0;body.querySelectorAll('.event-row').forEach(function(row){if(row.querySelector('.holiday-title'))return;const ev=evs[eventIndex++];if(!ev||!ev.row||row.querySelector('.member-actions'))return;const actions=document.createElement('div');actions.className='member-actions';actions.style.marginTop='8px';const edit=document.createElement('button');edit.className='btn';edit.textContent='수정';edit.onclick=function(){startCalendarEdit(ev,date);};const del=document.createElement('button');del.className='btn danger';del.textContent='삭제';del.onclick=function(){deleteDashboardRow('학사일정',ev.row,'학사일정');};actions.append(edit,del);row.appendChild(actions);});};
   renderNotices=function(){
     originalRenderNotices();
@@ -4404,7 +4470,7 @@ async function shareGijangApp(){
       });
     });
   };
-  loadAll=async function(){const result=await originalLoadAll();if(currentAccountId){updateMasterPermissionTab();renderSettings();if(isMasterUser()&&document.getElementById('tab-permissions')?.classList.contains('active'))renderMasterPermissions();showAlerts();}return result;};
+  loadAll=async function(){const result=await originalLoadAll();if(currentAccountId){updateMasterPermissionTab();renderSettings();if(isMasterUser()&&document.getElementById('tab-permissions')?.classList.contains('active'))renderMasterPermissions();showAlerts();renderTodaySummary_();}return result;};
   document.addEventListener('DOMContentLoaded',function(){
     const originalButton=document.getElementById('weekly-duty-sheet-open-btn');
     if(originalButton){
