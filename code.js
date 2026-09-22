@@ -118,8 +118,13 @@ const SITE_CONFIG_DEFAULTS = {
   timetableOfficialUrl: 'http://comci.net:4082/th',
   timetableServerUrl: '',
   windowsInstallerUrl: 'https://github.com/teacher9sgoo-max/gijang-teacher-helper/releases/latest',
-  schoolCode: '75378'
+  schoolCode: '75378',
+  // 바로가기 사이트 메뉴를 화면 어디에 보여줄지는 개인 설정이 아니라, 마스터가 한 번 정하면
+  // 모든 교사에게 똑같이 적용되는 값이어야 하므로 (기기별 localStorage가 아니라) 여기 사이트
+  // 설정에 저장합니다. 값: 'top'(상단 배너, 기본) · 'right' · 'left' · 'bottom'
+  quickLinksPosition: 'top'
 };
+const QUICK_LINKS_POSITIONS = ['top', 'right', 'left', 'bottom'];
 
 function configuredSpreadsheetId_() {
   const value = readSiteConfig_().sheetId;
@@ -136,7 +141,8 @@ const SITE_CONFIG_FIELDS = [
   { key: 'timetableOfficialUrl', label: '시간표 공식 사이트 주소' },
   { key: 'timetableServerUrl', label: '시간표 서버 주소(선택 사항)' },
   { key: 'windowsInstallerUrl', label: '설치파일 다운로드 주소' },
-  { key: 'schoolCode', label: '학교 코드' }
+  { key: 'schoolCode', label: '학교 코드' },
+  { key: 'quickLinksPosition', label: '바로가기 메뉴 위치(top/right/left/bottom)' }
 ];
 const SITE_CONFIG_KEYS = SITE_CONFIG_FIELDS.map(function(f) { return f.key; });
 
@@ -246,6 +252,11 @@ function siteConfigUpdate_(request) {
     if (input[key] != null) config[key] = cleanSiteUrl_(input[key]);
   });
   if (input.schoolCode != null) config.schoolCode = String(input.schoolCode).trim();
+  if (input.quickLinksPosition != null) {
+    const pos = String(input.quickLinksPosition).trim().toLowerCase();
+    if (QUICK_LINKS_POSITIONS.indexOf(pos) < 0) throw new Error('바로가기 메뉴 위치는 top/right/left/bottom 중 하나여야 합니다.');
+    config.quickLinksPosition = pos;
+  }
   writeSiteConfigToSheet_(config);
   PropertiesService.getScriptProperties().setProperty(SITE_CONFIG_PROPERTY, JSON.stringify(config)); // 백업용으로 계속 같이 저장
   return json_({ success: true, config: config, message: '사이트 설정이 저장되었습니다.' });

@@ -625,6 +625,7 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
 .qlink-add-row input{border:1px solid var(--border,#E1E8E3);border-radius:8px;padding:7px 10px;font-size:13px;background:#fffdf8;}
 .qlink-add-row input#qlink-name-input{width:140px;}
 .qlink-add-row input#qlink-url-input{flex:1;min-width:220px;}
+.qlink-add-row select#qlink-pos-select{border:1px solid var(--border,#E1E8E3);border-radius:8px;padding:7px 10px;font-size:13px;background:#fffdf8;}
 </style>
 </head>
 <body>
@@ -1300,6 +1301,8 @@ function applyActiveSiteConfig_(config){
   if(config.writeApiUrl)ACTIVE_WRITE_API_URL=String(config.writeApiUrl).trim().replace(/\/$/,'');
   if(config.timetableOfficialUrl)ACTIVE_TIMETABLE_OFFICIAL_URL=String(config.timetableOfficialUrl).trim();
   if(config.windowsInstallerUrl)ACTIVE_WINDOWS_INSTALLER_URL=String(config.windowsInstallerUrl).trim();
+  // 바로가기 메뉴 위치는 마스터가 저장한 값을 모두에게 그대로 적용합니다(기기별 설정 아님).
+  if(config.quickLinksPosition && typeof setQuickLinksPositionGlobal_==='function')setQuickLinksPositionGlobal_(String(config.quickLinksPosition).trim());
 }
 function getActiveSiteConfig_(){return {sheetId:ACTIVE_SHEET_ID,writeApiUrl:ACTIVE_WRITE_API_URL,timetableOfficialUrl:ACTIVE_TIMETABLE_OFFICIAL_URL,timetableServerUrl:(localStorage.getItem(TIMETABLE_SERVER_URL_KEY)||''),windowsInstallerUrl:ACTIVE_WINDOWS_INSTALLER_URL};}
 function activeSheetEditUrl(){return `https://docs.google.com/spreadsheets/d/${ACTIVE_SHEET_ID}/edit`;}
@@ -1942,17 +1945,18 @@ function buildStudents(rows){
 }
 
 /* ---------------- 교사 바로가기 링크 배너 (마스터가 사이트 이름·주소를 등록/삭제) ---------------- */
-// 배너를 어디에 보여줄지는 보는 사람마다 다를 수 있어서(기기별로) 서버가 아니라 이 브라우저에만 저장합니다.
-const QUICK_LINKS_POS_KEY = 'gijang_quicklinks_position_v1';
+// 배너 위치는 보는 사람마다 다르게 저장하는 개인 설정이 아니라, 마스터가 한 번 정하면
+// 모든 교사 화면에 똑같이 적용되는 값입니다. 그래서 이 브라우저(localStorage)가 아니라
+// '사이트 설정'(서버)에 저장하고, 페이지를 열 때마다 서버에서 받아와 적용합니다.
+let quickLinksPositionGlobal_ = 'top';
 function getQuickLinksPosition_(){
-  try{
-    const v = localStorage.getItem(QUICK_LINKS_POS_KEY);
-    return ['top','right','left','bottom'].indexOf(v) >= 0 ? v : 'top';
-  }catch(e){ return 'top'; }
+  return QUICK_LINKS_POSITIONS_.indexOf(quickLinksPositionGlobal_) >= 0 ? quickLinksPositionGlobal_ : 'top';
 }
-function setQuickLinksPosition_(pos){
-  const next = ['top','right','left','bottom'].indexOf(pos) >= 0 ? pos : 'top';
-  try{ localStorage.setItem(QUICK_LINKS_POS_KEY, next); }catch(e){}
+const QUICK_LINKS_POSITIONS_ = ['top','right','left','bottom'];
+// 서버(사이트 설정)에서 받은 값을 화면에 반영만 합니다. 저장은 saveQuickLinksPosition_()이 담당합니다.
+function setQuickLinksPositionGlobal_(pos){
+  if(QUICK_LINKS_POSITIONS_.indexOf(pos) < 0) return;
+  quickLinksPositionGlobal_ = pos;
   applyQuickLinksPosition_();
 }
 function applyQuickLinksPosition_(){
@@ -1960,6 +1964,17 @@ function applyQuickLinksPosition_(){
   if(!root) return;
   ['qlinks-pos-top','qlinks-pos-right','qlinks-pos-left','qlinks-pos-bottom'].forEach(c=>root.classList.remove(c));
   root.classList.add('qlinks-pos-'+getQuickLinksPosition_());
+}
+// 마스터가 위치를 바꾸면 서버(사이트 설정)에 저장해서 모든 교사에게 적용합니다.
+async function saveQuickLinksPosition_(pos){
+  const result = await postToServer_({action:'siteConfigUpdate', loginId:currentAccountId, password:currentLoginPassword, config:{quickLinksPosition:pos}});
+  if(result && result.success){
+    setQuickLinksPositionGlobal_(pos);
+    renderQuickLinksBanner();
+  } else {
+    alert((result&&result.error)||'바로가기 메뉴 위치를 저장하지 못했습니다.');
+    renderQuickLinksBanner(); // 선택값을 서버에 저장된 값으로 되돌립니다.
+  }
 }
 function buildQuickLinks(rows){
   const list=[];
@@ -1984,9 +1999,16 @@ function renderQuickLinksBanner(){
     const del = isAdmin ? '<button type="button" class="qlink-del" data-qlink-del="'+index+'" title="삭제">×</button>' : '';
     return '<span class="qlink-chip"><a href="'+escapeHtml(link.url)+'" target="_blank" rel="noopener">'+escapeHtml(link.name)+'</a>'+del+'</span>';
   }).join('');
-  const adminForm = isAdmin ? '<div class="qlink-add-row"><input id="qlink-name-input" type="text" placeholder="사이트 이름"><input id="qlink-url-input" type="text" placeholder="https://로 시작하는 주소"><button type="button" class="btn" id="qlink-add-btn">+ 추가</button></div>' : '';
+  const posOptions = [['top','상단 배너(기본)'],['right','우측 메뉴'],['left','좌측 메뉴'],['bottom','하단 메뉴']];
+  const positionForm = isAdmin ? '<div class="qlink-add-row" style="align-items:center"><label style="font-size:12px;color:var(--text-soft,#6b786e);font-weight:700">메뉴 위치(모든 교사 화면에 적용)</label><select id="qlink-pos-select">'+posOptions.map(function(o){return '<option value="'+o[0]+'"'+(getQuickLinksPosition_()===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div>' : '';
+  const adminForm = isAdmin ? '<div class="qlink-add-row"><input id="qlink-name-input" type="text" placeholder="사이트 이름"><input id="qlink-url-input" type="text" placeholder="https://로 시작하는 주소"><button type="button" class="btn" id="qlink-add-btn">+ 추가</button></div>'+positionForm : '';
   root.innerHTML = '<div class="qlink-bar">'+(chips || '<span class="qlink-empty">등록된 바로가기가 없습니다.</span>')+'</div>'+adminForm;
   if(isAdmin){
+    const posSelect = document.getElementById('qlink-pos-select');
+    if(posSelect) posSelect.addEventListener('change', function(){
+      posSelect.disabled = true;
+      saveQuickLinksPosition_(posSelect.value).finally(function(){ if(posSelect) posSelect.disabled=false; });
+    });
     root.querySelectorAll('[data-qlink-del]').forEach(function(btn){
       btn.addEventListener('click', function(){
         const idx = Number(btn.dataset.qlinkDel);
@@ -4557,7 +4579,7 @@ async function shareGijangApp(){
     const root=document.getElementById('settings-content');if(!root)return;
     updateDashboardEditControls();
     const p=preferences();
-    root.innerHTML='<div class="settings-grid"><article class="card"><h3>개인 계정 설정</h3><p class="progress-note">현재 로그인 계정의 비밀번호와 알림 방식을 변경합니다.</p><label class="field">현재 비밀번호<input id="my-current-password" type="password" autocomplete="current-password"></label><label class="field">새 비밀번호<input id="my-new-password" type="password" minlength="4" autocomplete="new-password"></label><label class="field">새 비밀번호 확인<input id="my-new-password-confirm" type="password" minlength="4" autocomplete="new-password"></label><button class="btn primary" id="my-password-save" type="button">비밀번호 변경</button><div id="my-password-status" class="settings-message"></div></article><article class="card"><h3>접속 알림</h3>'+settingRow('pref-duty-alert','오늘 급식 당번 알림','접속 시 오늘 내가 담당한 급식 당번이 있으면 팝업으로 알려줍니다.')+settingRow('pref-calendar-alert','오늘 학사일정 알림','접속 시 오늘의 학사일정이 있으면 알려줍니다.')+settingRow('pref-notice-alert','담임 전달사항 알림','접속 시 현재 적용 중인 담임교사 전달사항이 있으면 알려줍니다.')+'<button class="btn primary" id="my-pref-save" type="button" style="margin-top:14px">알림 설정 저장</button><div id="my-pref-status" class="settings-message"></div></article><article class="card"><h3>화면 표시</h3>'+settingRow('pref-large-mode','큰 화면 모드(120% 확대)','화면 전체를 조금 더 크게 표시합니다. 노트북이나 작은 창에서는 꺼두면 표·시간표가 더 잘 보입니다.')+'<label class="setting-option" style="align-items:flex-start;flex-direction:column;gap:6px"><span><b>바로가기 사이트 메뉴 위치</b><br><small>대시보드의 바로가기 배너를 어디에 표시할지 이 기기에서 선택합니다.</small></span><select id="pref-quicklinks-pos" style="width:100%;border:1px solid var(--border);border-radius:9px;padding:8px 10px;font:inherit;background:#fff"><option value="top">상단 배너(기본)</option><option value="right">우측 메뉴</option><option value="left">좌측 메뉴</option><option value="bottom">하단 메뉴</option></select></label><div id="my-display-status" class="settings-message"></div></article></div><div id="duty-settings-area"></div>';
+    root.innerHTML='<div class="settings-grid"><article class="card"><h3>개인 계정 설정</h3><p class="progress-note">현재 로그인 계정의 비밀번호와 알림 방식을 변경합니다.</p><label class="field">현재 비밀번호<input id="my-current-password" type="password" autocomplete="current-password"></label><label class="field">새 비밀번호<input id="my-new-password" type="password" minlength="4" autocomplete="new-password"></label><label class="field">새 비밀번호 확인<input id="my-new-password-confirm" type="password" minlength="4" autocomplete="new-password"></label><button class="btn primary" id="my-password-save" type="button">비밀번호 변경</button><div id="my-password-status" class="settings-message"></div></article><article class="card"><h3>접속 알림</h3>'+settingRow('pref-duty-alert','오늘 급식 당번 알림','접속 시 오늘 내가 담당한 급식 당번이 있으면 팝업으로 알려줍니다.')+settingRow('pref-calendar-alert','오늘 학사일정 알림','접속 시 오늘의 학사일정이 있으면 알려줍니다.')+settingRow('pref-notice-alert','담임 전달사항 알림','접속 시 현재 적용 중인 담임교사 전달사항이 있으면 알려줍니다.')+'<button class="btn primary" id="my-pref-save" type="button" style="margin-top:14px">알림 설정 저장</button><div id="my-pref-status" class="settings-message"></div></article><article class="card"><h3>화면 표시</h3>'+settingRow('pref-large-mode','큰 화면 모드(120% 확대)','화면 전체를 조금 더 크게 표시합니다. 노트북이나 작은 창에서는 꺼두면 표·시간표가 더 잘 보입니다.')+'<div id="my-display-status" class="settings-message"></div></article></div><div id="duty-settings-area"></div>';
     document.getElementById('pref-duty-alert').checked=p.dutyAlert!==false;document.getElementById('pref-calendar-alert').checked=!!p.calendarAlert;document.getElementById('pref-notice-alert').checked=!!p.noticeAlert;
     document.getElementById('my-pref-save').onclick=function(){savePreferences({dutyAlert:document.getElementById('pref-duty-alert').checked,calendarAlert:document.getElementById('pref-calendar-alert').checked,noticeAlert:document.getElementById('pref-notice-alert').checked});const s=document.getElementById('my-pref-status');s.className='settings-message ok';s.textContent='이 기기의 알림 설정을 저장했습니다.';alert('완료되었습니다.\n이 기기의 알림 설정을 저장했습니다.');};
     const largeModeBox=document.getElementById('pref-large-mode');
@@ -4568,16 +4590,6 @@ async function shareGijangApp(){
         const s=document.getElementById('my-display-status');
         s.className='settings-message ok';
         s.textContent='이 기기에 화면 표시 설정을 저장했습니다.';
-      };
-    }
-    const quickLinksPosBox=document.getElementById('pref-quicklinks-pos');
-    if(quickLinksPosBox){
-      quickLinksPosBox.value=getQuickLinksPosition_();
-      quickLinksPosBox.onchange=function(){
-        setQuickLinksPosition_(quickLinksPosBox.value);
-        const s=document.getElementById('my-display-status');
-        s.className='settings-message ok';
-        s.textContent='이 기기에 바로가기 메뉴 위치를 저장했습니다.';
       };
     }
     document.getElementById('my-password-save').onclick=changeMyPassword;
