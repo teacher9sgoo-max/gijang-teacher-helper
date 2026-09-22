@@ -9,7 +9,7 @@
  */
 
 const ROSTER_SPREADSHEET_ID = '1_qIRbv44zWd9yv4yNzTQ0frXTvILl2-iejzPqhF8i2w';
-const CODE_VERSION = '2026-09-02-batch-read-v1';
+const CODE_VERSION = '2026-09-22-calendar-sort-personal-quicklinks-v1';
 const ROSTER_SHEET_NAME = '교사 아이디 비번';
 const TEACHER_PERMISSION_SHEET_NAME = '교사 권한 관리';
 const ROSTER_SECRET_PROPERTY = 'SHEET_WRITE_SECRET';
@@ -44,6 +44,23 @@ function onOpen() {
     .createMenu('🔗 사이트 설정 관리')
     .addItem('🆕 사이트 설정 시트 만들기', 'menuCreateSiteConfigSheet_')
     .addToUi();
+}
+
+/**
+ * '학사일정' 시트를 사람이 직접 시트에서 편집(추가·수정)했을 때도 자동으로 날짜순 정렬합니다.
+ * (웹앱을 거친 추가·수정은 dashboardWrite_ 안에서 별도로 정렬합니다.)
+ * 스프레드시트 API로 값을 바꾸는 것(sort 포함)은 onEdit을 다시 부르지 않으므로 무한 반복 걱정은 없습니다.
+ */
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    const sheet = e.range.getSheet();
+    if (normalizeHeader_(sheet.getName()) !== normalizeHeader_(CALENDAR_SHEET_NAME)) return;
+    if (e.range.getRow() < 1) return;
+    sortCalendarSheetByDate_(sheet);
+  } catch (error) {
+    // 정렬 중 문제가 생겨도 사용자의 시트 편집 자체는 막지 않습니다.
+  }
 }
 
 function menuCreateSiteConfigSheet_() {
@@ -303,7 +320,7 @@ function doGet(e) {
     const data = { success: true, config: readSiteConfig_() };
     return jsonp_(data, callback);
   }
-  return jsonp_({ success: true, service: '기장중학교 교무 도우미', endpoint: 'doPost', permissionSheet: TEACHER_PERMISSION_SHEET_NAME, codeVersion: CODE_VERSION, features: ['sheetRead', 'sheetReadBatch', 'login', 'siteConfigSheet'] }, callback);
+  return jsonp_({ success: true, service: '기장중학교 교무 도우미', endpoint: 'doPost', permissionSheet: TEACHER_PERMISSION_SHEET_NAME, codeVersion: CODE_VERSION, features: ['sheetRead', 'sheetReadBatch', 'login', 'siteConfigSheet', 'calendarAutoSort', 'personalSchedule', 'quickLinksSave'] }, callback);
 }
 
 function doPost(e) {
@@ -315,6 +332,8 @@ function doPost(e) {
     if (action === 'personalRecords') return personalRecords_(request);
     if (action === 'personalRecordDelete') return personalRecordDelete_(request);
     if (action === 'dashboardWrite') return dashboardWrite_(request);
+    if (action === 'personalScheduleWrite') return personalScheduleWrite_(request);
+    if (action === 'quickLinksSave') return quickLinksSave_(request);
     if (action === 'dutyRotationSave') return saveDutyRotation_(request);
     if (action === 'permissionUpdate') return updateTeacherPermissions_(request);
     if (action === 'passwordChange') return changeTeacherPassword_(request);
@@ -1119,8 +1138,24 @@ function personalRecordDelete_(request) {
   return json_({success:true, kind:kind, recordId:recordId});
 }
 
+const CALENDAR_SHEET_NAME = '학사일정';
+const PERSONAL_SCHEDULE_SHEET_NAME = '개인 일정';
+const QUICK_LINKS_SHEET_NAME = '교사 바로가기 링크';
+
+/**
+ * '학사일정' 시트의 2행부터 마지막 행까지를 A열(날짜) 기준 오름차순으로 정렬합니다.
+ * Range.sort()는 셀에 실제 날짜값이 들어 있든 'YYYY-MM-DD' 형식의 텍스트든 모두
+ * 달력 순서와 같은 순서로 정렬해 줍니다. 빈 날짜 행은 항상 맨 뒤로 밀려납니다.
+ */
+function sortCalendarSheetByDate_(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 3) return; // 제목 행 + 데이터 0~1행이면 정렬할 필요가 없습니다.
+  const lastCol = Math.max(4, sheet.getLastColumn());
+  sheet.getRange(2, 1, lastRow - 1, lastCol).sort({ column: 1, ascending: true });
+}
+
 function dashboardSheet_(spreadsheet, resource) {
-  const aliases = resource === 'notice' ? ['담임교사 전달사항', '담임교사 안내사항', '안내사항'] : ['학사일정'];
+  const aliases = resource === 'notice' ? ['담임교사 전달사항', '담임교사 안내사항', '안내사항'] : [CALENDAR_SHEET_NAME];
   const normalizedAliases = aliases.map(function(name) { return normalizeHeader_(name); });
   const sheets = spreadsheet.getSheets();
   for (let i = 0; i < sheets.length; i++) {
@@ -1139,24 +1174,127 @@ function dashboardWrite_(request) {
   const config = { calendar: { permission: 'calendar' }, notice: { permission: 'notice' } }[resource];
   if (!config) throw new Error('지원하지 않는 수정 항목입니다.');
   requirePermission_(request, config.permission);
-  const spreadsheet = SpreadsheetApp.openById(configuredSpreadsheetId_());
-  const sheet = dashboardSheet_(spreadsheet, resource);
-  const mode = String(request.mode || 'append');
-  const row = Array.isArray(request.row) ? request.row.map(function(value) { return String(value == null ? '' : value); }) : [];
-  if (mode !== 'delete' && !row.length) throw new Error('저장할 내용이 없습니다.');
-  if (mode === 'update') {
-    const rowNumber = Number(request.rowNumber);
-    if (!Number.isInteger(rowNumber) || rowNumber < 2 || rowNumber > sheet.getLastRow()) throw new Error('수정할 기존 행을 찾지 못했습니다.');
-    sheet.getRange(rowNumber, 1, 1, Math.max(sheet.getLastColumn(), row.length)).clearContent();
-    sheet.getRange(rowNumber, 1, 1, row.length).setValues([row]);
-  } else if (mode === 'delete') {
-    const rowNumber = Number(request.rowNumber);
-    if (!Number.isInteger(rowNumber) || rowNumber < 2 || rowNumber > sheet.getLastRow()) throw new Error('삭제할 기존 행을 찾지 못했습니다.');
-    sheet.deleteRow(rowNumber);
-  } else {
-    sheet.appendRow(row);
+  const isCalendar = resource === 'calendar';
+  const lock = isCalendar ? LockService.getScriptLock() : null;
+  if (lock && !lock.tryLock(15 * 1000)) throw new Error('다른 학사일정 저장 작업이 진행 중입니다. 잠시 후 다시 시도하세요.');
+  try {
+    const spreadsheet = SpreadsheetApp.openById(configuredSpreadsheetId_());
+    const sheet = dashboardSheet_(spreadsheet, resource);
+    const mode = String(request.mode || 'append');
+    const row = Array.isArray(request.row) ? request.row.map(function(value) { return String(value == null ? '' : value); }) : [];
+    if (mode !== 'delete' && !row.length) throw new Error('저장할 내용이 없습니다.');
+    if (mode === 'update') {
+      const rowNumber = Number(request.rowNumber);
+      if (!Number.isInteger(rowNumber) || rowNumber < 2 || rowNumber > sheet.getLastRow()) throw new Error('수정할 기존 행을 찾지 못했습니다.');
+      sheet.getRange(rowNumber, 1, 1, Math.max(sheet.getLastColumn(), row.length)).clearContent();
+      sheet.getRange(rowNumber, 1, 1, row.length).setValues([row]);
+    } else if (mode === 'delete') {
+      const rowNumber = Number(request.rowNumber);
+      if (!Number.isInteger(rowNumber) || rowNumber < 2 || rowNumber > sheet.getLastRow()) throw new Error('삭제할 기존 행을 찾지 못했습니다.');
+      sheet.deleteRow(rowNumber);
+    } else {
+      sheet.appendRow(row);
+    }
+    // 학사일정은 추가·수정·삭제할 때마다 항상 날짜순으로 자동 정렬해서, 시트를 직접 열어봐도
+    // 항상 날짜순으로 보이게 합니다. 정렬하면 행 번호가 바뀔 수 있으므로, 화면(브라우저)이
+    // 옛 행 번호로 다음 수정을 잘못 보내지 않도록 정렬 직후의 전체 데이터를 함께 돌려줍니다.
+    if (isCalendar) {
+      sortCalendarSheetByDate_(sheet);
+      return json_({ success: true, resource: resource, mode: mode, rows: readSheetRowsRaw_(spreadsheet, CALENDAR_SHEET_NAME) });
+    }
+    return json_({ success: true, resource: resource, mode: mode });
+  } finally {
+    if (lock) lock.releaseLock();
   }
-  return json_({ success: true, resource: resource, mode: mode });
+}
+
+/* ---------------- 개인 일정(교사 누구나 추가 가능한 개인 메모형 일정) ---------------- */
+function personalScheduleSheet_(spreadsheet) {
+  let sheet = spreadsheet.getSheetByName(PERSONAL_SCHEDULE_SHEET_NAME);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(PERSONAL_SCHEDULE_SHEET_NAME);
+    sheet.getRange(1, 1, 1, 6).setValues([['날짜', '작성자아이디', '작성자이름', '제목', '내용', '기록ID']]).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function sortPersonalScheduleSheet_(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 3) return;
+  const lastCol = Math.max(6, sheet.getLastColumn());
+  sheet.getRange(2, 1, lastRow - 1, lastCol).sort({ column: 1, ascending: true });
+}
+
+function personalScheduleWrite_(request) {
+  // 개인 일정은 학사일정과 달리 '학사일정수정' 권한이 없어도 로그인한 교사라면 누구나 추가할 수 있습니다.
+  const account = accountWithPermissions_(request.loginId, request.password);
+  const mode = String(request.mode || 'append');
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15 * 1000)) throw new Error('다른 개인 일정 저장 작업이 진행 중입니다. 잠시 후 다시 시도하세요.');
+  try {
+    const spreadsheet = SpreadsheetApp.openById(configuredSpreadsheetId_());
+    const sheet = personalScheduleSheet_(spreadsheet);
+    if (mode === 'delete') {
+      const rowNumber = Number(request.rowNumber);
+      if (!Number.isInteger(rowNumber) || rowNumber < 2 || rowNumber > sheet.getLastRow()) throw new Error('삭제할 개인 일정을 찾지 못했습니다.');
+      const owner = String(sheet.getRange(rowNumber, 2).getValue() || '').trim();
+      if (owner !== account.loginId && !account.isMaster) throw new Error('본인이 등록한 개인 일정만 삭제할 수 있습니다.');
+      sheet.deleteRow(rowNumber);
+    } else if (mode === 'update') {
+      const rowNumber = Number(request.rowNumber);
+      if (!Number.isInteger(rowNumber) || rowNumber < 2 || rowNumber > sheet.getLastRow()) throw new Error('수정할 개인 일정을 찾지 못했습니다.');
+      const owner = String(sheet.getRange(rowNumber, 2).getValue() || '').trim();
+      if (owner !== account.loginId && !account.isMaster) throw new Error('본인이 등록한 개인 일정만 수정할 수 있습니다.');
+      const input = request.row || {};
+      const recordId = String(sheet.getRange(rowNumber, 6).getValue() || '') || String(new Date().getTime() + '-' + Math.random());
+      const ownerName = String(sheet.getRange(rowNumber, 3).getValue() || account.realName);
+      sheet.getRange(rowNumber, 1, 1, 6).setValues([[String(input.date || ''), owner, ownerName, String(input.title || ''), String(input.detail || ''), recordId]]);
+    } else {
+      const input = request.row || {};
+      if (!String(input.date || '').trim()) throw new Error('날짜를 입력하세요.');
+      if (!String(input.title || '').trim() && !String(input.detail || '').trim()) throw new Error('제목이나 내용을 입력하세요.');
+      const recordId = String(new Date().getTime() + '-' + Math.random());
+      sheet.appendRow([String(input.date || ''), account.loginId, account.realName, String(input.title || ''), String(input.detail || ''), recordId]);
+    }
+    sortPersonalScheduleSheet_(sheet);
+    return json_({ success: true, mode: mode, rows: readSheetRowsRaw_(spreadsheet, PERSONAL_SCHEDULE_SHEET_NAME) });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/* ---------------- 교사 바로가기 링크(사이트 바로가기 배너) ---------------- */
+function quickLinksSheet_(spreadsheet) {
+  let sheet = spreadsheet.getSheetByName(QUICK_LINKS_SHEET_NAME);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(QUICK_LINKS_SHEET_NAME);
+    sheet.getRange(1, 1, 1, 2).setValues([['이름', '주소']]).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function quickLinksSave_(request) {
+  const account = accountWithPermissions_(request.loginId, request.password);
+  if (!account.isMaster) throw new Error('바로가기 사이트는 마스터 관리자만 추가·삭제할 수 있습니다.');
+  const links = Array.isArray(request.links) ? request.links : [];
+  const cleaned = links.map(function(link) {
+    const name = String((link && link.name) || '').trim();
+    const url = String((link && link.url) || '').trim();
+    return [name, url];
+  }).filter(function(row) { return row[0] && /^https?:\/\//i.test(row[1]); });
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15 * 1000)) throw new Error('다른 바로가기 저장 작업이 진행 중입니다. 잠시 후 다시 시도하세요.');
+  try {
+    const spreadsheet = SpreadsheetApp.openById(configuredSpreadsheetId_());
+    const sheet = quickLinksSheet_(spreadsheet);
+    if (sheet.getLastRow() > 1) sheet.getRange(2, 1, sheet.getLastRow() - 1, Math.max(2, sheet.getLastColumn())).clearContent();
+    if (cleaned.length) sheet.getRange(2, 1, cleaned.length, 2).setValues(cleaned);
+    return json_({ success: true, links: cleaned.map(function(row) { return { name: row[0], url: row[1] }; }) });
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function saveDutyRotation_(request) {

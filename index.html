@@ -36,6 +36,9 @@
   --danger:#FF3B30;
   --boy:#0A84FF;
   --girl:#FF375F;
+  --personal-event:#0A84FF;
+  --personal-event-bg:#EAF2FB;
+  --personal-event-border:rgba(10,132,255,.28);
   --radius-lg:20px;
   --radius-md:14px;
   --radius-sm:9px;
@@ -184,6 +187,12 @@ section.tab.active{display:block; animation:fade .25s ease;}
 .ev-chip .ev-detail{background:#EAF2ED; color:var(--text); padding:2px 5px; border:1px solid rgba(46,125,83,.18); border-top:none; border-radius:0 0 4px 4px;}
 .ev-chip .ev-title:only-child{border-radius:4px;}
 .ev-chip .ev-detail:only-child{border-radius:4px; border-top:1px solid rgba(46,125,83,.18);}
+.ev-chip.is-personal .ev-title{background:var(--personal-event);}
+.ev-chip.is-personal .ev-title::before{content:"👤 ";}
+.ev-chip.is-personal .ev-detail{background:var(--personal-event-bg); border-color:var(--personal-event-border);}
+.ev-chip.is-personal .ev-detail:only-child{border-top:1px solid var(--personal-event-border);}
+.event-row.is-personal .ev-title{background:var(--personal-event);}
+.event-row.is-personal .ev-title::before{content:"👤 ";}
 
 /* day detail modal */
 #day-modal{display:none; position:fixed; inset:0; background:rgba(20,26,22,.45); align-items:center; justify-content:center; z-index:50; padding:20px; backdrop-filter:blur(5px);}
@@ -525,6 +534,7 @@ textarea{resize:vertical; min-height:64px;}
   padding:0; margin-bottom:10px; display:inline-flex; align-items:center; gap:4px;
 }
 .quickadd-toggle:hover{text-decoration:underline;}
+.quickadd-toggle.qa-personal-toggle{color:var(--personal-event); margin-left:12px;}
 .quickadd-form{
   display:none; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-md);
   padding:14px; margin-bottom:14px;
@@ -590,7 +600,20 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
 .member-table tr:last-child td{border-bottom:0;}.member-table .admin-row{background:#F5FBF7;}.member-actions{display:flex;gap:6px;justify-content:flex-end;}.member-actions .btn{padding:6px 9px;font-size:12px;}
 .member-edit{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:center;min-width:680px;}.role-chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:700;background:#EDF7F0;color:#267246;}.role-chip.teacher{background:#F0F3F2;color:#57645C;}
 @media(max-width:780px){.member-grid{grid-template-columns:1fr;}.member-edit{grid-template-columns:1fr;min-width:0;}.member-table{min-width:460px;}}
-#quick-links-banner{display:none;padding:10px 20px;background:var(--surface-2,#F2F6F3);border-bottom:1px solid var(--border,#E1E8E3);}
+#quick-links-banner{display:none;padding:10px 20px;background:var(--surface-2,#F2F6F3);border-bottom:1px solid var(--border,#E1E8E3);transition:none;}
+#quick-links-banner.qlinks-pos-right{position:fixed;top:100px;right:0;left:auto;bottom:auto;width:216px;max-height:calc(100vh - 130px);overflow:auto;border:1px solid var(--border,#E1E8E3);border-right:none;border-radius:14px 0 0 14px;box-shadow:var(--shadow-md);z-index:40;}
+#quick-links-banner.qlinks-pos-right .qlink-bar{flex-direction:column;align-items:stretch;}
+#quick-links-banner.qlinks-pos-right .qlink-chip{justify-content:space-between;}
+#quick-links-banner.qlinks-pos-left{position:fixed;top:100px;left:0;right:auto;bottom:auto;width:216px;max-height:calc(100vh - 130px);overflow:auto;border:1px solid var(--border,#E1E8E3);border-left:none;border-radius:0 14px 14px 0;box-shadow:var(--shadow-md);z-index:40;}
+#quick-links-banner.qlinks-pos-left .qlink-bar{flex-direction:column;align-items:stretch;}
+#quick-links-banner.qlinks-pos-left .qlink-chip{justify-content:space-between;}
+#quick-links-banner.qlinks-pos-bottom{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;border-bottom:none;box-shadow:0 -4px 16px rgba(0,0,0,.08);z-index:40;}
+#quick-links-banner.qlinks-pos-bottom .qlink-bar{justify-content:center;}
+@media(max-width:760px){
+  #quick-links-banner.qlinks-pos-right,#quick-links-banner.qlinks-pos-left,#quick-links-banner.qlinks-pos-bottom{
+    position:static; width:auto; max-height:none; border-radius:0; box-shadow:none; border:1px solid var(--border,#E1E8E3); border-left:0; border-right:0;
+  }
+}
 .qlink-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
 .qlink-chip{display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--border,#E1E8E3);border-radius:999px;padding:5px 6px 5px 12px;font-size:13px;}
 .qlink-chip a{color:var(--accent,#2C6B47);text-decoration:none;font-weight:600;}
@@ -686,6 +709,21 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
             <button class="btn" id="qa-cal-cancel">취소</button>
           </div>
           <div class="quickadd-status" id="qa-cal-status"></div>
+        </div>
+        <button class="quickadd-toggle qa-personal-toggle" id="qa-personal-toggle">+ 개인 일정 추가</button>
+        <div class="quickadd-form" id="qa-personal-form">
+          <div class="quickadd-row">
+            <div><label class="qa-inline">날짜</label><input type="date" id="qa-personal-date"></div>
+            <div><label class="qa-inline">제목</label><input type="text" id="qa-personal-title" placeholder="예: 병원 예약"></div>
+          </div>
+          <div class="quickadd-row">
+            <div><label class="qa-inline">내용</label><input type="text" id="qa-personal-detail" placeholder="예: 오후 반차"></div>
+          </div>
+          <div class="quickadd-actions">
+            <button class="btn primary" id="qa-personal-submit">저장</button>
+            <button class="btn" id="qa-personal-cancel">취소</button>
+          </div>
+          <div class="quickadd-status" id="qa-personal-status"></div>
         </div>
         <div class="weekday-row">
           <div class="wd-sun">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="wd-sat">토</div>
@@ -1288,6 +1326,21 @@ async function postRowToSheet(sheetName, row, action='appendRow', rowNumber=null
   const mode=action==='updateRow'?'update':action==='deleteRow'?'delete':'append';
   return postApp({action:'dashboardWrite',resource:resource,mode:mode,row:Array.isArray(row)?row:[],rowNumber:rowNumber,loginId:currentAccountId,password:currentLoginPassword});
 }
+// 개인 일정·바로가기처럼 대시보드 권한 검사가 필요 없는 요청에 쓰는 공용 서버 호출 함수입니다.
+// (postApp은 뒤쪽 설정 확장 스크립트 안에서만 쓸 수 있는 내부 함수라 여기서는 재사용할 수 없습니다.)
+async function postToServer_(payload){
+  const url = activeWriteApiUrl();
+  if(!url) return {success:false,error:'Apps Script 웹앱 주소가 설정되지 않았습니다.'};
+  try{
+    const res = await fetch(url, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload)});
+    return await res.json();
+  }catch(error){
+    return {success:false, error:'네트워크 오류로 저장하지 못했습니다.'};
+  }
+}
+async function postPersonalSchedule_(row, mode, rowNumber){
+  return postToServer_({action:'personalScheduleWrite', mode:mode, row:row||{}, rowNumber:rowNumber, loginId:currentAccountId, password:currentLoginPassword});
+}
 /* ---------------- standalone login / Google Sheet member registry ---------------- */
 const USER_STORAGE_KEY = 'gijang_current_user_v1';
 const MEMBER_STORAGE_KEY = 'gijang_member_registry_v1';
@@ -1540,6 +1593,7 @@ function initMemberManagement(){
 document.addEventListener('DOMContentLoaded', ()=>{ showStatus('loading'); initMemberManagement(); loadAll(); initProgressTab(); initActivityTab(); document.getElementById('weekly-duty-sheet-open-btn')?.addEventListener('click',()=>window.open(activeSheetEditUrl(),'_blank','noopener')); window.setInterval(()=>{ if(!document.hidden) loadAll(); }, 30*60*1000); });
 
 let calendarEvents = {};
+let personalEvents = {};
 let notices = [];
 let students = [];
 let quickLinks = [];
@@ -1758,10 +1812,36 @@ function buildCalendar(rows){
 }
 function addEvent(key,title,detail,row){
   if(!calendarEvents[key]) calendarEvents[key]=[];
-  calendarEvents[key].push({title,detail,row});
+  calendarEvents[key].push({title,detail,row,kind:'school'});
 }
 function commaLines(text){
   return text.split(',').map(s=>s.trim()).filter(Boolean);
+}
+
+/* ---------------- 개인 일정(누구나 추가 가능, 대시보드 달력에 다른 색으로 표시) ---------------- */
+// '개인 일정' 시트 열 구성: A=날짜, B=작성자아이디, C=작성자이름, D=제목, E=내용, F=기록ID
+function buildPersonalEvents(rows){
+  personalEvents = {};
+  if(!Array.isArray(rows)) return;
+  rows.slice(1).forEach((r,index)=>{
+    const d = parseDateFlexible(r[0]);
+    if(!d) return;
+    const ownerId = (r[1]||'').toString().trim();
+    const ownerName = (r[2]||'').toString().trim();
+    const title = (r[3]||'').toString().trim();
+    const detail = (r[4]||'').toString().trim();
+    const recordId = (r[5]||'').toString().trim();
+    if(!title && !detail) return;
+    const key = dateKey(d);
+    if(!personalEvents[key]) personalEvents[key]=[];
+    personalEvents[key].push({title,detail,row:index+2,kind:'personal',ownerId,ownerName,recordId});
+  });
+}
+function eventsForDay_(key){
+  return (calendarEvents[key]||[]).concat(personalEvents[key]||[]);
+}
+function canEditPersonalEvent_(ev){
+  return !!(ev && ev.kind==='personal' && ev.row && (ev.ownerId===currentAccountId || currentRole==='admin'));
 }
 
 function buildDuty(rows){
@@ -1862,6 +1942,25 @@ function buildStudents(rows){
 }
 
 /* ---------------- 교사 바로가기 링크 배너 (마스터가 사이트 이름·주소를 등록/삭제) ---------------- */
+// 배너를 어디에 보여줄지는 보는 사람마다 다를 수 있어서(기기별로) 서버가 아니라 이 브라우저에만 저장합니다.
+const QUICK_LINKS_POS_KEY = 'gijang_quicklinks_position_v1';
+function getQuickLinksPosition_(){
+  try{
+    const v = localStorage.getItem(QUICK_LINKS_POS_KEY);
+    return ['top','right','left','bottom'].indexOf(v) >= 0 ? v : 'top';
+  }catch(e){ return 'top'; }
+}
+function setQuickLinksPosition_(pos){
+  const next = ['top','right','left','bottom'].indexOf(pos) >= 0 ? pos : 'top';
+  try{ localStorage.setItem(QUICK_LINKS_POS_KEY, next); }catch(e){}
+  applyQuickLinksPosition_();
+}
+function applyQuickLinksPosition_(){
+  const root = document.getElementById('quick-links-banner');
+  if(!root) return;
+  ['qlinks-pos-top','qlinks-pos-right','qlinks-pos-left','qlinks-pos-bottom'].forEach(c=>root.classList.remove(c));
+  root.classList.add('qlinks-pos-'+getQuickLinksPosition_());
+}
 function buildQuickLinks(rows){
   const list=[];
   if(Array.isArray(rows)){
@@ -1876,6 +1975,7 @@ function buildQuickLinks(rows){
 function renderQuickLinksBanner(){
   const root = document.getElementById('quick-links-banner');
   if(!root) return;
+  applyQuickLinksPosition_();
   const isAdmin = currentRole==='admin';
   const links = quickLinks || [];
   if(!links.length && !isAdmin){ root.innerHTML=''; root.style.display='none'; return; }
@@ -1931,7 +2031,7 @@ async function loadAll(){
   // 못 불러오는 원인이 되었습니다(그 뒤 개별 요청으로 재시도하며 늦게 복구됨).
   // 이 두 시트는 로그인 후 syncPersonalRecordsFromServer_()가 loginId·password를 실어
   // 따로 정상적으로 가져오므로, 여기서는 빼도 됩니다.
-  const sheetNames=['학사일정','담임교사 전달사항','전체 명렬표','급식당번','시간표 캐시','교사 아이디 비번','조별 반복 당번표','교사 권한 관리','교사 바로가기 링크'];
+  const sheetNames=['학사일정','담임교사 전달사항','전체 명렬표','급식당번','시간표 캐시','교사 아이디 비번','조별 반복 당번표','교사 권한 관리','교사 바로가기 링크','개인 일정'];
   // 한 시트의 지연·실패가 회원 명부 로그인까지 막지 않도록 하되, 요청 자체는 한 번에 모아서 보냅니다.
   const sheetResults=await fetchSheetRowsBatch(sheetNames);
   const rowsAt=index=>sheetResults[index]?.status==='fulfilled'&&Array.isArray(sheetResults[index].value)?sheetResults[index].value:[];
@@ -1948,6 +2048,7 @@ async function loadAll(){
   // 로그인 전에는 빈 배열 그대로 두고 로그인 후 syncPersonalRecordsFromServer_()가 채웁니다.
   permissionSheetRows=rowsAt(7);
   buildQuickLinks(rowsAt(8));
+  buildPersonalEvents(rowsAt(9));
   if(currentAccountId) hydratePersonalCloudRecords_();
   hideStatus();
   document.getElementById('sync-label').textContent = failedSheets.length ? `일부 자료 지연 · ${failedSheets.join(', ')}` : '마지막 업데이트 ' + new Date().toLocaleTimeString('ko-KR');
@@ -2048,6 +2149,17 @@ function wireQuickAddToggle(toggleId, formId, cancelId){
 wireQuickAddToggle('qa-cal-toggle','qa-cal-form','qa-cal-cancel');
 wireQuickAddToggle('qa-notice-toggle','qa-notice-form','qa-notice-cancel');
 wireQuickAddToggle('qa-duty-toggle','qa-duty-form','qa-duty-cancel');
+wireQuickAddToggle('qa-personal-toggle','qa-personal-form','qa-personal-cancel');
+{
+  const personalCancelBtn = document.getElementById('qa-personal-cancel');
+  if(personalCancelBtn) personalCancelBtn.addEventListener('click', ()=>{
+    editingPersonalRow = null;
+    document.getElementById('qa-personal-submit').textContent='저장';
+    document.getElementById('qa-personal-date').value='';
+    document.getElementById('qa-personal-title').value='';
+    document.getElementById('qa-personal-detail').value='';
+  });
+}
 
 const WEEKDAY_KO = ['일','월','화','수','목','금','토'];
 document.getElementById('qa-cal-submit').addEventListener('click', async ()=>{
@@ -2068,14 +2180,68 @@ document.getElementById('qa-cal-submit').addEventListener('click', async ()=>{
   if(result.success){
     statusEl.className='quickadd-status ok'; statusEl.textContent=isEdit?'수정했습니다!':'저장했습니다!';
     editingCalendarRow=null; document.getElementById('qa-cal-submit').textContent='저장';
-    document.getElementById('qa-cal-title').value=''; document.getElementById('qa-cal-detail').value='';
-    if(!isEdit)await loadAll();
+    document.getElementById('qa-cal-date').value=''; document.getElementById('qa-cal-title').value=''; document.getElementById('qa-cal-detail').value='';
+    // 서버가 정렬된 최신 학사일정 전체를 함께 돌려주므로(자동 날짜순 정렬 때문에 행 번호가
+    // 바뀔 수 있음), 화면도 그 최신 데이터로 다시 맞춥니다. 옛 서버라 rows가 없으면
+    // 예전처럼 loadAll()로 전체를 다시 불러옵니다.
+    if(Array.isArray(result.rows)){ buildCalendar(result.rows); }
+    else { await loadAll(); }
     document.getElementById('qa-cal-form').classList.remove('show'); statusEl.textContent='';
+    // 추가(수정이 아닌 새 일정)가 끝나면 대시보드를 오늘이 보이는 처음 화면으로 되돌립니다.
+    if(!isEdit){ const now=new Date(); calViewYear=now.getFullYear(); calViewMonth=now.getMonth(); }
+    renderCalendar();
   } else {
     if(isEdit)await loadAll();
     statusEl.className='quickadd-status err'; statusEl.textContent = result.error || '저장에 실패했습니다.';
   }
 });
+
+let editingPersonalRow = null;
+document.getElementById('qa-personal-submit').addEventListener('click', async ()=>{
+  const statusEl = document.getElementById('qa-personal-status');
+  const dateVal = document.getElementById('qa-personal-date').value;
+  const title = document.getElementById('qa-personal-title').value.trim();
+  const detail = document.getElementById('qa-personal-detail').value.trim();
+  if(!dateVal || (!title && !detail)){
+    statusEl.className='quickadd-status err'; statusEl.textContent='날짜와 제목(또는 내용)을 입력해주세요.'; return;
+  }
+  statusEl.className='quickadd-status'; statusEl.textContent='저장 중...';
+  const isEdit=Number.isInteger(editingPersonalRow) && editingPersonalRow>=2;
+  const result = await postPersonalSchedule_({date:dateVal, title:title, detail:detail}, isEdit?'update':'append', isEdit?editingPersonalRow:null);
+  if(result.success){
+    buildPersonalEvents(result.rows||[]);
+    renderCalendar();
+    statusEl.className='quickadd-status ok'; statusEl.textContent=isEdit?'수정했습니다!':'저장했습니다!';
+    editingPersonalRow=null; document.getElementById('qa-personal-submit').textContent='저장';
+    document.getElementById('qa-personal-date').value=''; document.getElementById('qa-personal-title').value=''; document.getElementById('qa-personal-detail').value='';
+    document.getElementById('qa-personal-form').classList.remove('show');
+    // 개인 일정도 저장이 끝나면 대시보드를 오늘이 보이는 처음 화면으로 되돌려줍니다.
+    if(!isEdit){ const now=new Date(); calViewYear=now.getFullYear(); calViewMonth=now.getMonth(); renderCalendar(); }
+    setTimeout(()=>{ statusEl.textContent=''; }, 1200);
+  } else {
+    statusEl.className='quickadd-status err'; statusEl.textContent = result.error || '저장에 실패했습니다.';
+  }
+});
+function startPersonalScheduleEdit(ev, date){
+  editingPersonalRow = ev.row;
+  document.getElementById('qa-personal-date').value = toInputDate(date);
+  document.getElementById('qa-personal-title').value = ev.title || '';
+  document.getElementById('qa-personal-detail').value = ev.detail || '';
+  document.getElementById('qa-personal-submit').textContent = '수정 저장';
+  document.getElementById('qa-personal-form').classList.add('show');
+  document.getElementById('day-modal').classList.remove('show');
+}
+async function deletePersonalSchedule(rowNumber){
+  if(!(await customConfirm_('이 개인 일정을 삭제할까요?'))) return;
+  const result = await postPersonalSchedule_({}, 'delete', rowNumber);
+  if(result.success){
+    buildPersonalEvents(result.rows||[]);
+    renderCalendar();
+    document.getElementById('day-modal').classList.remove('show');
+  } else {
+    alert(result.error || '개인 일정을 삭제하지 못했습니다.');
+  }
+}
 
 document.getElementById('qa-notice-submit').addEventListener('click', async ()=>{
   const statusEl = document.getElementById('qa-notice-status');
@@ -2151,6 +2317,9 @@ async function deleteDashboardRow(sheet,rowNumber,label){
   applyLocalDashboardMutation_(sheet,rowNumber,[],'delete');
   const result=await postRowToSheet(sheet,[], 'deleteRow', rowNumber);
   if(result.success){
+    // 학사일정은 삭제 뒤 다른 행들이 한 칸씩 밀려 올라가고(자동 정렬도 함께 일어나므로),
+    // 화면에 남아 있는 다른 일정들의 행 번호가 낡아지지 않도록 서버가 돌려준 최신 전체로 맞춥니다.
+    if(sheet==='학사일정' && Array.isArray(result.rows)){ buildCalendar(result.rows); renderCalendar(); }
     document.getElementById('day-modal').classList.remove('show');
     document.getElementById('qa-cal-form').classList.remove('show');
     document.getElementById('qa-notice-form').classList.remove('show');
@@ -2244,7 +2413,7 @@ function renderCalendar(){
     const key = dateKey(realDate);
     const isToday = sameDay(realDate, today);
     if(isToday) cellDiv.classList.add('is-today');
-    const evsForDay = calendarEvents[key] || [];
+    const evsForDay = eventsForDay_(key);
     const schoolDayOffEv = evsForDay.find(ev=> isSchoolDayOff(ev.title) || isSchoolDayOff(ev.detail));
     const holidayName = HOLIDAYS_2026[key] || (schoolDayOffEv ? (schoolDayOffEv.title || '재량휴업일') : null);
     if(holidayName) cellDiv.classList.add('is-holiday');
@@ -2267,7 +2436,7 @@ function renderCalendar(){
       list.className = 'ev-list';
       evs.forEach(ev=>{
         const chip = document.createElement('div');
-        chip.className = 'ev-chip';
+        chip.className = 'ev-chip' + (ev.kind==='personal' ? ' is-personal' : '');
         if(ev.title){
           const t = document.createElement('div');
           t.className = 'ev-title';
@@ -2283,10 +2452,16 @@ function renderCalendar(){
           });
           chip.appendChild(d2);
         }
-        if(currentRole==='admin' && ev.row){
+        if(currentRole==='admin' && ev.kind!=='personal' && ev.row){
           const actions=document.createElement('div'); actions.className='member-actions'; actions.style.marginTop='6px';
           const edit=document.createElement('button'); edit.className='btn'; edit.textContent='수정'; edit.addEventListener('click',e=>{e.stopPropagation();startCalendarEdit(ev,realDate);});
           const remove=document.createElement('button'); remove.className='btn danger'; remove.textContent='삭제'; remove.addEventListener('click',e=>{e.stopPropagation();deleteDashboardRow('학사일정',ev.row,'학사일정');});
+          actions.append(edit,remove); chip.appendChild(actions);
+        }
+        if(canEditPersonalEvent_(ev)){
+          const actions=document.createElement('div'); actions.className='member-actions'; actions.style.marginTop='6px';
+          const edit=document.createElement('button'); edit.className='btn'; edit.textContent='수정'; edit.addEventListener('click',e=>{e.stopPropagation();startPersonalScheduleEdit(ev,realDate);});
+          const remove=document.createElement('button'); remove.className='btn danger'; remove.textContent='삭제'; remove.addEventListener('click',e=>{e.stopPropagation();deletePersonalSchedule(ev.row);});
           actions.append(edit,remove); chip.appendChild(actions);
         }
         list.appendChild(chip);
@@ -2331,7 +2506,7 @@ function openDayModal(date, evs, holidayName){
   } else {
     evs.forEach(ev=>{
       const row = document.createElement('div');
-      row.className='event-row';
+      row.className='event-row' + (ev.kind==='personal' ? ' is-personal' : '');
       if(ev.title){
         const t = document.createElement('div');
         t.className = 'ev-title';
@@ -2347,10 +2522,22 @@ function openDayModal(date, evs, holidayName){
         });
         row.appendChild(textWrap);
       }
-      if(currentRole==='admin' && ev.row){
+      if(ev.kind==='personal' && ev.ownerName){
+        const owner = document.createElement('div');
+        owner.className = 'progress-note'; owner.style.margin='4px 0 0';
+        owner.textContent = '작성자: ' + ev.ownerName;
+        row.appendChild(owner);
+      }
+      if(currentRole==='admin' && ev.kind!=='personal' && ev.row){
         const actions=document.createElement('div'); actions.className='member-actions'; actions.style.marginTop='8px';
         const edit=document.createElement('button'); edit.className='btn'; edit.textContent='수정'; edit.addEventListener('click',()=>startCalendarEdit(ev,date));
         const remove=document.createElement('button'); remove.className='btn danger'; remove.textContent='삭제'; remove.addEventListener('click',()=>deleteDashboardRow('학사일정',ev.row,'학사일정'));
+        actions.append(edit,remove); row.appendChild(actions);
+      }
+      if(canEditPersonalEvent_(ev)){
+        const actions=document.createElement('div'); actions.className='member-actions'; actions.style.marginTop='8px';
+        const edit=document.createElement('button'); edit.className='btn'; edit.textContent='수정'; edit.addEventListener('click',()=>startPersonalScheduleEdit(ev,date));
+        const remove=document.createElement('button'); remove.className='btn danger'; remove.textContent='삭제'; remove.addEventListener('click',()=>deletePersonalSchedule(ev.row));
         actions.append(edit,remove); row.appendChild(actions);
       }
       body.appendChild(row);
@@ -4370,7 +4557,7 @@ async function shareGijangApp(){
     const root=document.getElementById('settings-content');if(!root)return;
     updateDashboardEditControls();
     const p=preferences();
-    root.innerHTML='<div class="settings-grid"><article class="card"><h3>개인 계정 설정</h3><p class="progress-note">현재 로그인 계정의 비밀번호와 알림 방식을 변경합니다.</p><label class="field">현재 비밀번호<input id="my-current-password" type="password" autocomplete="current-password"></label><label class="field">새 비밀번호<input id="my-new-password" type="password" minlength="4" autocomplete="new-password"></label><label class="field">새 비밀번호 확인<input id="my-new-password-confirm" type="password" minlength="4" autocomplete="new-password"></label><button class="btn primary" id="my-password-save" type="button">비밀번호 변경</button><div id="my-password-status" class="settings-message"></div></article><article class="card"><h3>접속 알림</h3>'+settingRow('pref-duty-alert','오늘 급식 당번 알림','접속 시 오늘 내가 담당한 급식 당번이 있으면 팝업으로 알려줍니다.')+settingRow('pref-calendar-alert','오늘 학사일정 알림','접속 시 오늘의 학사일정이 있으면 알려줍니다.')+settingRow('pref-notice-alert','담임 전달사항 알림','접속 시 현재 적용 중인 담임교사 전달사항이 있으면 알려줍니다.')+'<button class="btn primary" id="my-pref-save" type="button" style="margin-top:14px">알림 설정 저장</button><div id="my-pref-status" class="settings-message"></div></article><article class="card"><h3>화면 표시</h3>'+settingRow('pref-large-mode','큰 화면 모드(120% 확대)','화면 전체를 조금 더 크게 표시합니다. 노트북이나 작은 창에서는 꺼두면 표·시간표가 더 잘 보입니다.')+'<div id="my-display-status" class="settings-message"></div></article></div><div id="duty-settings-area"></div>';
+    root.innerHTML='<div class="settings-grid"><article class="card"><h3>개인 계정 설정</h3><p class="progress-note">현재 로그인 계정의 비밀번호와 알림 방식을 변경합니다.</p><label class="field">현재 비밀번호<input id="my-current-password" type="password" autocomplete="current-password"></label><label class="field">새 비밀번호<input id="my-new-password" type="password" minlength="4" autocomplete="new-password"></label><label class="field">새 비밀번호 확인<input id="my-new-password-confirm" type="password" minlength="4" autocomplete="new-password"></label><button class="btn primary" id="my-password-save" type="button">비밀번호 변경</button><div id="my-password-status" class="settings-message"></div></article><article class="card"><h3>접속 알림</h3>'+settingRow('pref-duty-alert','오늘 급식 당번 알림','접속 시 오늘 내가 담당한 급식 당번이 있으면 팝업으로 알려줍니다.')+settingRow('pref-calendar-alert','오늘 학사일정 알림','접속 시 오늘의 학사일정이 있으면 알려줍니다.')+settingRow('pref-notice-alert','담임 전달사항 알림','접속 시 현재 적용 중인 담임교사 전달사항이 있으면 알려줍니다.')+'<button class="btn primary" id="my-pref-save" type="button" style="margin-top:14px">알림 설정 저장</button><div id="my-pref-status" class="settings-message"></div></article><article class="card"><h3>화면 표시</h3>'+settingRow('pref-large-mode','큰 화면 모드(120% 확대)','화면 전체를 조금 더 크게 표시합니다. 노트북이나 작은 창에서는 꺼두면 표·시간표가 더 잘 보입니다.')+'<label class="setting-option" style="align-items:flex-start;flex-direction:column;gap:6px"><span><b>바로가기 사이트 메뉴 위치</b><br><small>대시보드의 바로가기 배너를 어디에 표시할지 이 기기에서 선택합니다.</small></span><select id="pref-quicklinks-pos" style="width:100%;border:1px solid var(--border);border-radius:9px;padding:8px 10px;font:inherit;background:#fff"><option value="top">상단 배너(기본)</option><option value="right">우측 메뉴</option><option value="left">좌측 메뉴</option><option value="bottom">하단 메뉴</option></select></label><div id="my-display-status" class="settings-message"></div></article></div><div id="duty-settings-area"></div>';
     document.getElementById('pref-duty-alert').checked=p.dutyAlert!==false;document.getElementById('pref-calendar-alert').checked=!!p.calendarAlert;document.getElementById('pref-notice-alert').checked=!!p.noticeAlert;
     document.getElementById('my-pref-save').onclick=function(){savePreferences({dutyAlert:document.getElementById('pref-duty-alert').checked,calendarAlert:document.getElementById('pref-calendar-alert').checked,noticeAlert:document.getElementById('pref-notice-alert').checked});const s=document.getElementById('my-pref-status');s.className='settings-message ok';s.textContent='이 기기의 알림 설정을 저장했습니다.';alert('완료되었습니다.\n이 기기의 알림 설정을 저장했습니다.');};
     const largeModeBox=document.getElementById('pref-large-mode');
@@ -4381,6 +4568,16 @@ async function shareGijangApp(){
         const s=document.getElementById('my-display-status');
         s.className='settings-message ok';
         s.textContent='이 기기에 화면 표시 설정을 저장했습니다.';
+      };
+    }
+    const quickLinksPosBox=document.getElementById('pref-quicklinks-pos');
+    if(quickLinksPosBox){
+      quickLinksPosBox.value=getQuickLinksPosition_();
+      quickLinksPosBox.onchange=function(){
+        setQuickLinksPosition_(quickLinksPosBox.value);
+        const s=document.getElementById('my-display-status');
+        s.className='settings-message ok';
+        s.textContent='이 기기에 바로가기 메뉴 위치를 저장했습니다.';
       };
     }
     document.getElementById('my-password-save').onclick=changeMyPassword;
