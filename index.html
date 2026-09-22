@@ -602,6 +602,7 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
 @media(max-width:780px){.member-grid{grid-template-columns:1fr;}.member-edit{grid-template-columns:1fr;min-width:0;}.member-table{min-width:460px;}}
 /* 바로가기 사이트 배너: 상단 헤더의 설치파일·링크공유 버튼과 헷갈리지 않도록,
    대시보드 카드처럼 독립된 카드형 배너로 분리해서 보여줍니다. */
+#quick-links-banner.show{display:block;}
 #quick-links-banner{
   display:none;
   margin:0 0 18px;
@@ -2009,8 +2010,8 @@ function renderQuickLinksBanner(){
   applyQuickLinksPosition_();
   const isAdmin = currentRole==='admin';
   const links = quickLinks || [];
-  if(!links.length && !isAdmin){ root.innerHTML=''; root.style.display='none'; return; }
-  root.style.display='';
+  if(!links.length && !isAdmin){ root.innerHTML=''; root.classList.remove('show'); return; }
+  root.classList.add('show');
   const chips = links.map(function(link,index){
     const del = isAdmin ? '<button type="button" class="qlink-del" data-qlink-del="'+index+'" title="삭제">×</button>' : '';
     return '<span class="qlink-chip"><a href="'+escapeHtml(link.url)+'" target="_blank" rel="noopener">'+escapeHtml(link.name)+'</a>'+del+'</span>';
