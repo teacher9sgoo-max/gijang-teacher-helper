@@ -600,18 +600,34 @@ footer.hint{margin-top:36px; font-size:12px; color:var(--text-faint); text-align
 .member-table tr:last-child td{border-bottom:0;}.member-table .admin-row{background:#F5FBF7;}.member-actions{display:flex;gap:6px;justify-content:flex-end;}.member-actions .btn{padding:6px 9px;font-size:12px;}
 .member-edit{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:center;min-width:680px;}.role-chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:700;background:#EDF7F0;color:#267246;}.role-chip.teacher{background:#F0F3F2;color:#57645C;}
 @media(max-width:780px){.member-grid{grid-template-columns:1fr;}.member-edit{grid-template-columns:1fr;min-width:0;}.member-table{min-width:460px;}}
-#quick-links-banner{display:none;padding:10px 20px;background:var(--surface-2,#F2F6F3);border-bottom:1px solid var(--border,#E1E8E3);transition:none;}
-#quick-links-banner.qlinks-pos-right{position:fixed;top:100px;right:0;left:auto;bottom:auto;width:216px;max-height:calc(100vh - 130px);overflow:auto;border:1px solid var(--border,#E1E8E3);border-right:none;border-radius:14px 0 0 14px;box-shadow:var(--shadow-md);z-index:40;}
+/* 바로가기 사이트 배너: 상단 헤더의 설치파일·링크공유 버튼과 헷갈리지 않도록,
+   대시보드 카드처럼 독립된 카드형 배너로 분리해서 보여줍니다. */
+#quick-links-banner{
+  display:none;
+  margin:0 0 18px;
+  padding:14px 18px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:4px solid var(--accent);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-sm);
+}
+#quick-links-banner .qlink-heading{
+  display:flex; align-items:center; gap:6px;
+  font-size:12.5px; font-weight:800; color:var(--accent);
+  margin-bottom:10px; letter-spacing:.01em;
+}
+#quick-links-banner.qlinks-pos-right{position:fixed;top:100px;right:0;left:auto;bottom:auto;width:216px;max-height:calc(100vh - 130px);overflow:auto;margin:0;border:1px solid var(--border,#E1E8E3);border-right:none;border-left:4px solid var(--accent);border-radius:14px 0 0 14px;box-shadow:var(--shadow-md);z-index:40;}
 #quick-links-banner.qlinks-pos-right .qlink-bar{flex-direction:column;align-items:stretch;}
 #quick-links-banner.qlinks-pos-right .qlink-chip{justify-content:space-between;}
-#quick-links-banner.qlinks-pos-left{position:fixed;top:100px;left:0;right:auto;bottom:auto;width:216px;max-height:calc(100vh - 130px);overflow:auto;border:1px solid var(--border,#E1E8E3);border-left:none;border-radius:0 14px 14px 0;box-shadow:var(--shadow-md);z-index:40;}
+#quick-links-banner.qlinks-pos-left{position:fixed;top:100px;left:0;right:auto;bottom:auto;width:216px;max-height:calc(100vh - 130px);overflow:auto;margin:0;border:1px solid var(--border,#E1E8E3);border-left:none;border-right:4px solid var(--accent);border-radius:0 14px 14px 0;box-shadow:var(--shadow-md);z-index:40;}
 #quick-links-banner.qlinks-pos-left .qlink-bar{flex-direction:column;align-items:stretch;}
 #quick-links-banner.qlinks-pos-left .qlink-chip{justify-content:space-between;}
-#quick-links-banner.qlinks-pos-bottom{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;border-bottom:none;box-shadow:0 -4px 16px rgba(0,0,0,.08);z-index:40;}
+#quick-links-banner.qlinks-pos-bottom{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;margin:0;border-bottom:none;border-left:none;border-top:4px solid var(--accent);border-radius:0;box-shadow:0 -4px 16px rgba(0,0,0,.08);z-index:40;}
 #quick-links-banner.qlinks-pos-bottom .qlink-bar{justify-content:center;}
 @media(max-width:760px){
   #quick-links-banner.qlinks-pos-right,#quick-links-banner.qlinks-pos-left,#quick-links-banner.qlinks-pos-bottom{
-    position:static; width:auto; max-height:none; border-radius:0; box-shadow:none; border:1px solid var(--border,#E1E8E3); border-left:0; border-right:0;
+    position:static; width:auto; max-height:none; border-radius:var(--radius-md); box-shadow:var(--shadow-sm); border:1px solid var(--border,#E1E8E3); border-left:4px solid var(--accent);
   }
 }
 .qlink-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
@@ -2002,7 +2018,7 @@ function renderQuickLinksBanner(){
   const posOptions = [['top','상단 배너(기본)'],['right','우측 메뉴'],['left','좌측 메뉴'],['bottom','하단 메뉴']];
   const positionForm = isAdmin ? '<div class="qlink-add-row" style="align-items:center"><label style="font-size:12px;color:var(--text-soft,#6b786e);font-weight:700">메뉴 위치(모든 교사 화면에 적용)</label><select id="qlink-pos-select">'+posOptions.map(function(o){return '<option value="'+o[0]+'"'+(getQuickLinksPosition_()===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div>' : '';
   const adminForm = isAdmin ? '<div class="qlink-add-row"><input id="qlink-name-input" type="text" placeholder="사이트 이름"><input id="qlink-url-input" type="text" placeholder="https://로 시작하는 주소"><button type="button" class="btn" id="qlink-add-btn">+ 추가</button></div>'+positionForm : '';
-  root.innerHTML = '<div class="qlink-bar">'+(chips || '<span class="qlink-empty">등록된 바로가기가 없습니다.</span>')+'</div>'+adminForm;
+  root.innerHTML = '<div class="qlink-heading">🔗 바로가기 사이트</div><div class="qlink-bar">'+(chips || '<span class="qlink-empty">등록된 바로가기가 없습니다.</span>')+'</div>'+adminForm;
   if(isAdmin){
     const posSelect = document.getElementById('qlink-pos-select');
     if(posSelect) posSelect.addEventListener('change', function(){
