@@ -9,7 +9,7 @@
  */
 
 const ROSTER_SPREADSHEET_ID = '1_qIRbv44zWd9yv4yNzTQ0frXTvILl2-iejzPqhF8i2w';
-const CODE_VERSION = '2026-09-23-modal-edit-popup-v2';
+const CODE_VERSION = '2026-09-23-legacy-url-guard-v3';
 const ROSTER_SHEET_NAME = '교사 아이디 비번';
 const TEACHER_PERMISSION_SHEET_NAME = '교사 권한 관리';
 const ROSTER_SECRET_PROPERTY = 'SHEET_WRITE_SECRET';
@@ -204,7 +204,13 @@ const LEGACY_WRITE_API_URLS_ = [
   // 2026-09-23: "새 버전으로 배포"가 아니라 "새 배포"로 만들어서 주소가 또 바뀐 경우입니다.
   // (앱스 스크립트는 기존 배포를 "편집(연필 아이콘) → 새 버전"으로 갱신해야 주소가 그대로 유지되고,
   // "새 배포"를 누르면 완전히 다른 /exec 주소가 새로 생깁니다.)
-  'https://script.google.com/macros/s/AKfycby4cPpIOv4szV-xQB8OaEYr4rWq2Qh84A6mhld--nTWCWDqxpNXqYsK9qdlglB7jbjm/exec'
+  'https://script.google.com/macros/s/AKfycby4cPpIOv4szV-xQB8OaEYr4rWq2Qh84A6mhld--nTWCWDqxpNXqYsK9qdlglB7jbjm/exec',
+  // 2026-09-23: 대화 중에 후보로 언급됐던 다른 주소들도 혹시 '사이트 설정' 시트에 저장돼 있을
+  // 경우를 대비해 함께 무시 목록에 넣습니다. (바로가기 추가·개인 일정 추가가 "회원 명부 쓰기
+  // 인증 실패"로 실패하는 원인이, 지금 쓰는 배포 주소 자체가 아니라 '사이트 설정' 시트에 저장된
+  // 옛 주소를 프론트엔드가 최신 주소보다 우선해서 덮어써버리는 것으로 확인됐습니다.)
+  'https://script.google.com/macros/s/AKfycbzJwCBvQc8ZSwHBV0vLrOLzOYNTc6qDGsJQfrn1QczF8pdCH7Fb0PJB23ycCUF4DLZj/exec',
+  'https://script.google.com/macros/s/AKfycbxo9hGf1i6QuIAO8MbG5CE2OmGGOMSol56MH_4NV469ZLg2xMkaxf7nmutfNN5wUqLU/exec'
 ];
 
 function readSiteConfig_() {
