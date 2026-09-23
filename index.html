@@ -929,6 +929,17 @@ body.qlpos-bottom #app{padding-bottom:90px;}
           <div class="cal-grid" id="pc-grid"></div>
         </div>
 
+        <div class="card pc-settings-card">
+          <h2>개인 달력 설정</h2>
+          <div class="pc-toggle-row">
+            <div>
+              <div class="pc-toggle-title">대시보드 달력에도 표시(보기 전용)</div>
+              <div class="pc-toggle-sub">켜면 다른 선생님도 대시보드 달력에서 내 개인 일정을 볼 수 있어요(파란색 👤 표시). 대시보드에서는 보기만 되고, 추가·수정·삭제는 항상 이 '📅 개인 달력' 탭에서만 합니다. 기본값은 꺼짐(나만 보기)입니다.</div>
+            </div>
+            <button type="button" class="pc-switch" id="pc-dashboard-toggle" role="switch" aria-checked="false"><span class="pc-switch-knob"></span></button>
+          </div>
+          <div class="quickadd-status" id="pc-toggle-status"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -1954,12 +1965,16 @@ function buildPersonalEvents(rows){
   });
 }
 function eventsForDay_(key){
-  // 대시보드 달력은 학사일정 전용입니다. 개인 일정은 절대 섞어서 보여주지 않습니다.
-  // (개인 일정은 '📅 개인 달력' 탭에서만 등록·확인·수정합니다.)
-  return (calendarEvents[key]||[]);
+  // 대시보드 달력에는 '개인 달력' 탭에서 "대시보드에도 표시"를 켠 교사의 개인 일정만
+  // '보기 전용'으로 섞어서 보여줍니다(기본값은 꺼짐: 나만 보기). 등록·수정·삭제는 여전히
+  // '📅 개인 달력' 탭에서만 할 수 있습니다(canEditPersonalEvent_가 항상 false라서 대시보드에는
+  // 수정·삭제 버튼이 절대 나오지 않습니다).
+  const visiblePersonal=(personalEvents[key]||[]).filter(function(ev){ return !!personalCalendarPrefs[ev.ownerId]; });
+  return (calendarEvents[key]||[]).concat(visiblePersonal);
 }
 function canEditPersonalEvent_(ev){
-  // 대시보드 달력에서는 개인 일정을 아예 표시하지 않으므로 항상 false입니다.
+  // 대시보드 달력에서는 개인 일정을 '보기 전용'으로만 보여줍니다. 수정·삭제는 항상
+  // '📅 개인 달력' 탭에서만 하도록, 여기서는 절대 true를 반환하지 않습니다.
   return false;
 }
 
@@ -2122,27 +2137,45 @@ function renderQuickLinksBanner(){
   root.classList.add('show');
   const chips = links.map(function(link,index){
     const del = isAdmin ? '<button type="button" class="qlink-del" data-qlink-del="'+index+'" title="삭제">×</button>' : '';
-    let host = '';
-    try{ host = new URL(link.url).hostname; }catch(e){ host=''; }
     const initial = (link.name||'?').trim().charAt(0);
-    // 사이트의 실제 파비콘을 동그란 아이콘으로 보여주고, 못 불러오면 이름 첫 글자로 대신합니다.
-    // (onerror에 복잡한 JS를 문자열로 직접 넣으면 따옴표가 겹쳐 깨지기 쉬워서, 실패 처리는
-    // 아래에서 querySelectorAll로 이벤트를 따로 연결합니다.)
-    const icon = host
-      ? '<span class="qlink-ico" data-fallback="'+escapeHtml(initial)+'"><img src="https://www.google.com/s2/favicons?sz=64&domain='+encodeURIComponent(host)+'" alt=""></span>'
-      : '<span class="qlink-ico">'+escapeHtml(initial)+'</span>';
+    // 아이콘은 자리표시(첫 글자)로 우선 그려두고, 실제 파비콘은 아래에서 순서대로 시도해서
+    // 로드되면 그때 교체합니다(사이트마다 파비콘을 제공하는 방식이 달라서 한 곳만 쓰면
+    // 다들 똑같은 기본 아이콘으로 보이는 경우가 많습니다).
+    const icon = '<span class="qlink-ico" data-idx="'+index+'" data-fallback="'+escapeHtml(initial)+'">'+escapeHtml(initial)+'</span>';
     return '<span class="qlink-chip">'+icon+'<a href="'+escapeHtml(link.url)+'" target="_blank" rel="noopener">'+escapeHtml(link.name)+'</a>'+del+'</span>';
   }).join('');
   const posOptions = [['top','상단 배너(기본)'],['right','우측 메뉴'],['left','좌측 메뉴'],['bottom','하단 메뉴']];
   const positionForm = isAdmin ? '<div class="qlink-add-row" style="align-items:center"><label style="font-size:12px;color:var(--text-soft,#6b786e);font-weight:700">메뉴 위치(모든 교사 화면에 적용)</label><select id="qlink-pos-select">'+posOptions.map(function(o){return '<option value="'+o[0]+'"'+(getQuickLinksPosition_()===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div>' : '';
   const adminForm = isAdmin ? '<div class="qlink-add-row"><input id="qlink-name-input" type="text" placeholder="사이트 이름"><input id="qlink-url-input" type="text" placeholder="https://로 시작하는 주소"><button type="button" class="btn" id="qlink-add-btn">+ 추가</button></div>'+positionForm : '';
   root.innerHTML = '<div class="qlink-heading">🔗 바로가기 사이트</div><div class="qlink-bar">'+(chips || '<span class="qlink-empty">등록된 바로가기가 없습니다.</span>')+'</div>'+adminForm;
-  // 파비콘을 못 불러오면(onerror) 이름 첫 글자로 대신 채웁니다.
-  root.querySelectorAll('.qlink-ico[data-fallback] img').forEach(function(img){
-    img.addEventListener('error', function(){
-      const holder = img.parentElement;
-      if(holder){ holder.textContent = holder.dataset.fallback || '?'; }
-    });
+  // 사이트 파비콘을 여러 출처에서 순서대로 시도합니다: ①그 사이트 자신의 favicon.ico(가장 정확)
+  // → ②DuckDuckGo 파비콘 서비스(그때그때 새로 가져와서 커버리지가 넓음) → ③구글 파비콘 서비스.
+  // 하나라도 실제로 로드되면 그 이미지로 바로 바꾸고, 전부 실패하면 이름 첫 글자로 남겨둡니다.
+  root.querySelectorAll('.qlink-ico[data-idx]').forEach(function(holder){
+    const link = links[Number(holder.dataset.idx)];
+    let host = '';
+    try{ host = link && new URL(link.url).hostname; }catch(e){ host=''; }
+    if(!host) return;
+    const sources = [
+      'https://'+host+'/favicon.ico',
+      'https://icons.duckduckgo.com/ip3/'+host+'.ico',
+      'https://www.google.com/s2/favicons?sz=64&domain='+encodeURIComponent(host)
+    ];
+    let sourceIndex = 0;
+    const img = new Image();
+    img.alt = '';
+    img.onload = function(){
+      // 1x1짜리 빈 이미지를 "성공"으로 잘못 표시하는 서비스도 있어서, 너무 작은 이미지는
+      // 실제 파비콘이 아닌 것으로 보고 다음 출처로 넘어갑니다.
+      if(img.naturalWidth && img.naturalWidth <= 1){ img.onerror(); return; }
+      holder.innerHTML = ''; holder.appendChild(img);
+    };
+    img.onerror = function(){
+      sourceIndex++;
+      if(sourceIndex < sources.length){ img.src = sources[sourceIndex]; }
+      else { holder.textContent = holder.dataset.fallback || '?'; }
+    };
+    img.src = sources[0];
   });
   if(isAdmin){
     const posSelect = document.getElementById('qlink-pos-select');
@@ -2212,6 +2245,7 @@ async function loadAll(){
   permissionSheetRows=rowsAt(7);
   buildQuickLinks(rowsAt(8));
   buildPersonalEvents(rowsAt(9));
+  buildPersonalCalendarPrefs_(rowsAt(10));
   if(currentAccountId) hydratePersonalCloudRecords_();
   hideStatus();
   document.getElementById('sync-label').textContent = failedSheets.length ? `일부 자료 지연 · ${failedSheets.join(', ')}` : '마지막 업데이트 ' + new Date().toLocaleTimeString('ko-KR');
@@ -2408,6 +2442,17 @@ async function deletePersonalSchedule(rowNumber){
 
 /* ================= 개인 달력 탭 ================= */
 let pcViewYear, pcViewMonth;
+let personalCalendarPrefs = {}; // { [loginId]: true } — 대시보드 달력에 '보기 전용'으로 공개하기로 한 교사 집합
+
+function buildPersonalCalendarPrefs_(rows){
+  personalCalendarPrefs = {};
+  if(!Array.isArray(rows)) return;
+  rows.slice(1).forEach(function(r){
+    const id=(r[0]||'').toString().trim();
+    const on=(r[1]||'').toString().trim().toUpperCase()==='Y';
+    if(id && on) personalCalendarPrefs[id]=true;
+  });
+}
 
 function renderPersonalCalendarTab_(){
   const gate=document.getElementById('pc-login-gate');
@@ -2420,6 +2465,7 @@ function renderPersonalCalendarTab_(){
   gate.style.display='none'; content.style.display='';
   if(pcViewYear===undefined){ const now=new Date(); pcViewYear=now.getFullYear(); pcViewMonth=now.getMonth(); }
   renderPcGrid_();
+  renderPcToggle_();
 }
 
 function ownPersonalEventsForDay_(key){
@@ -2531,6 +2577,30 @@ function openPcDayModal_(date, evs){
 }
 document.getElementById('pc-day-modal-close').addEventListener('click', ()=>{ document.getElementById('pc-day-modal').classList.remove('show'); });
 document.getElementById('pc-day-modal').addEventListener('click', (e)=>{ if(e.target.id==='pc-day-modal') e.currentTarget.classList.remove('show'); });
+
+function renderPcToggle_(){
+  const sw=document.getElementById('pc-dashboard-toggle');
+  if(!sw) return;
+  const on=!!personalCalendarPrefs[currentAccountId];
+  sw.classList.toggle('on', on);
+  sw.setAttribute('aria-checked', on ? 'true':'false');
+}
+document.getElementById('pc-dashboard-toggle').addEventListener('click', async function(){
+  const sw=this;
+  const statusEl=document.getElementById('pc-toggle-status');
+  const nextOn=!sw.classList.contains('on');
+  sw.disabled=true;
+  const result=await postToServer_({action:'personalCalendarPrefsSet', loginId:currentAccountId, password:currentLoginPassword, showOnDashboard:nextOn});
+  sw.disabled=false;
+  if(result && result.success){
+    if(nextOn) personalCalendarPrefs[currentAccountId]=true; else delete personalCalendarPrefs[currentAccountId];
+    renderPcToggle_();
+    renderCalendar();
+    if(statusEl){ statusEl.className='quickadd-status ok'; statusEl.textContent=nextOn?'대시보드 달력에도 보기 전용으로 표시됩니다.':'이제 개인 달력에서만 보입니다.'; setTimeout(()=>{statusEl.textContent='';},1800); }
+  } else {
+    if(statusEl){ statusEl.className='quickadd-status err'; statusEl.textContent=(result&&result.error)||'설정을 저장하지 못했습니다.'; }
+  }
+});
 
 document.getElementById('qa-notice-submit').addEventListener('click', async ()=>{
   const statusEl = document.getElementById('qa-notice-status');
@@ -2725,9 +2795,10 @@ function renderCalendar(){
       list.className = 'ev-list';
       evs.forEach(ev=>{
         // 달력 칸은 좁아서 수정·삭제 버튼을 넣지 않습니다. 날짜를 눌러 팝업을 열면
-        // 거기서 그 자리에서 바로 수정·삭제할 수 있습니다(openDayModal).
+        // 거기서 그 자리에서 바로 수정·삭제할 수 있습니다(openDayModal, 학사일정만 가능).
+        // 개인 일정(kind==='personal')은 여기서도 보기 전용입니다.
         const chip = document.createElement('div');
-        chip.className = 'ev-chip';
+        chip.className = 'ev-chip' + (ev.kind==='personal' ? ' is-personal' : '');
         if(ev.title){
           const t = document.createElement('div');
           t.className = 'ev-title';
@@ -2785,7 +2856,7 @@ function openDayModal(date, evs, holidayName){
   } else {
     evs.forEach(ev=>{
       const row = document.createElement('div');
-      row.className='event-row';
+      row.className='event-row' + (ev.kind==='personal' ? ' is-personal' : '');
       if(ev.title){
         const t = document.createElement('div');
         t.className = 'ev-title';
@@ -2801,7 +2872,15 @@ function openDayModal(date, evs, holidayName){
         });
         row.appendChild(textWrap);
       }
-      if(currentRole==='admin' && ev.row){
+      if(ev.kind==='personal' && ev.ownerName){
+        // 보기 전용: 대시보드에는 작성자만 표시하고, 수정·삭제 버튼은 절대 넣지 않습니다
+        // (등록·수정·삭제는 항상 '📅 개인 달력' 탭에서만 합니다).
+        const owner = document.createElement('div');
+        owner.className = 'progress-note'; owner.style.margin='4px 0 0';
+        owner.textContent = '작성자: ' + ev.ownerName + ' (개인 일정 · 보기 전용)';
+        row.appendChild(owner);
+      }
+      if(currentRole==='admin' && ev.kind!=='personal' && ev.row){
         const actions=document.createElement('div'); actions.className='member-actions'; actions.style.marginTop='8px';
         const edit=document.createElement('button'); edit.className='btn'; edit.textContent='수정'; edit.addEventListener('click',()=>startCalendarEditInModal_(ev,date,row));
         const remove=document.createElement('button'); remove.className='btn danger'; remove.textContent='삭제'; remove.addEventListener('click',()=>deleteDashboardRow('학사일정',ev.row,'학사일정'));
@@ -4999,7 +5078,7 @@ async function shareGijangApp(){
   window.renderTodaySummary_=renderTodaySummary_;
   function updateMasterPermissionTab(){const tab=document.getElementById('permissions-tab-btn');if(tab)tab.style.display=isMasterUser()?'':'none';}
   establishLogin_=function(account,pw){originalEstablishLogin(account,pw);setTimeout(function(){updateMasterPermissionTab();renderSettings();renderNotices();showAlerts();renderTodaySummary_();},250);};
-  openDayModal=function(date,evs,holiday){originalOpenDayModal(date,evs,holiday);if(!permissionFor('calendar'))return;const body=document.getElementById('day-modal-body');let eventIndex=0;body.querySelectorAll('.event-row').forEach(function(row){if(row.querySelector('.holiday-title'))return;const ev=evs[eventIndex++];if(!ev||!ev.row||row.querySelector('.member-actions'))return;const actions=document.createElement('div');actions.className='member-actions';actions.style.marginTop='8px';const edit=document.createElement('button');edit.className='btn';edit.textContent='수정';edit.onclick=function(){startCalendarEditInModal_(ev,date,row);};const del=document.createElement('button');del.className='btn danger';del.textContent='삭제';del.onclick=function(){deleteDashboardRow('학사일정',ev.row,'학사일정');};actions.append(edit,del);row.appendChild(actions);});};
+  openDayModal=function(date,evs,holiday){originalOpenDayModal(date,evs,holiday);if(!permissionFor('calendar'))return;const body=document.getElementById('day-modal-body');let eventIndex=0;body.querySelectorAll('.event-row').forEach(function(row){if(row.querySelector('.holiday-title'))return;const ev=evs[eventIndex++];if(!ev||!ev.row||ev.kind==='personal'||row.querySelector('.member-actions'))return;const actions=document.createElement('div');actions.className='member-actions';actions.style.marginTop='8px';const edit=document.createElement('button');edit.className='btn';edit.textContent='수정';edit.onclick=function(){startCalendarEditInModal_(ev,date,row);};const del=document.createElement('button');del.className='btn danger';del.textContent='삭제';del.onclick=function(){deleteDashboardRow('학사일정',ev.row,'학사일정');};actions.append(edit,del);row.appendChild(actions);});};
   renderNotices=function(){
     originalRenderNotices();
     if(!permissionFor('notice'))return;
