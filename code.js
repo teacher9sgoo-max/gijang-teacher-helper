@@ -9,7 +9,7 @@
  */
 
 const ROSTER_SPREADSHEET_ID = '1_qIRbv44zWd9yv4yNzTQ0frXTvILl2-iejzPqhF8i2w';
-const CODE_VERSION = '2026-09-22-calendar-sort-personal-quicklinks-v1';
+const CODE_VERSION = '2026-09-23-modal-edit-popup-v2';
 const ROSTER_SHEET_NAME = '교사 아이디 비번';
 const TEACHER_PERMISSION_SHEET_NAME = '교사 권한 관리';
 const ROSTER_SECRET_PROPERTY = 'SHEET_WRITE_SECRET';
@@ -56,7 +56,7 @@ function onEdit(e) {
     if (!e || !e.range) return;
     const sheet = e.range.getSheet();
     if (normalizeHeader_(sheet.getName()) !== normalizeHeader_(CALENDAR_SHEET_NAME)) return;
-    if (e.range.getRow() < 1) return;
+    if (e.range.getRow() < 2) return; // 제목 행(1행) 편집은 정렬 대상이 아니므로 건너뜁니다.
     sortCalendarSheetByDate_(sheet);
   } catch (error) {
     // 정렬 중 문제가 생겨도 사용자의 시트 편집 자체는 막지 않습니다.
@@ -114,7 +114,13 @@ function menuShowTimetableSyncStatus_() {
 const SITE_CONFIG_PROPERTY = 'GIJANG_SITE_CONFIG_V1';
 const SITE_CONFIG_DEFAULTS = {
   sheetId: ROSTER_SPREADSHEET_ID,
-  writeApiUrl: 'https://script.google.com/macros/s/AKfycbxGOJ4oPC2W1qqcger47LhvgDFhVuLLCBxoottOvT09pwp3-wyA91i6Yustckm7IG1Z/exec',
+  // ⚠️ 2026-09-23: "새 배포"로 다시 배포하면서 주소가 또 바뀌었습니다(AKfycby4cP... → AKfycbyCHl...).
+  // '사이트 설정' 시트가 새로 만들어질 때 이 값이 그대로 들어가는데, 예전 주소로 채워지면
+  // '바로가기 사이트 추가' 등 모든 저장 기능이 실패합니다. index.html의 WRITE_API_URL과
+  // dashboard-config.js의 GIJANG_WRITE_API_URL과 항상 같은 값으로 맞춰주세요.
+  // (앞으로는 이 주소를 다시 바꾸지 않으려면, "새 배포"가 아니라 기존 배포를
+  // "편집(연필 아이콘) → 버전: 새 버전 → 배포"로 갱신하세요. 그래야 /exec 주소가 그대로 유지됩니다.)
+  writeApiUrl: 'https://script.google.com/macros/s/AKfycbyCHlwYSfF1hT_zG4CW8WxilvW5dan03qNvZSv7aSmgwdHJTAZg101NB5OCLXb2NjQ4/exec',
   timetableOfficialUrl: 'http://comci.net:4082/th',
   timetableServerUrl: '',
   windowsInstallerUrl: 'https://github.com/teacher9sgoo-max/gijang-teacher-helper/releases/latest',
@@ -189,6 +195,18 @@ function siteConfigSheet_() {
   return sheet;
 }
 
+// '사이트 설정' 시트에 예전(더 이상 쓰지 않는) 앱스크립트 주소가 저장돼 있으면, 그 값을 무시하고
+// 최신 기본 주소를 씁니다. (예전 배포 주소가 기본값으로 잘못 들어가 있던 문제를 시트에 이미
+// 저장된 값까지 포함해서 자동으로 고쳐줍니다. 정상적인 최신 주소를 직접 저장한 경우에는 영향 없습니다.)
+const LEGACY_WRITE_API_URLS_ = [
+  'https://script.google.com/macros/s/AKfycbxGOJ4oPC2W1qqcger47LhvgDFhVuLLCBxoottOvT09pwp3-wyA91i6Yustckm7IG1Z/exec',
+  'https://script.google.com/macros/s/AKfycbxucaf195_4iYTZOyTur0N7QMGUUAGoqUquJp26gXRBmqOnCDlABHl-HlIyTB1ibvew/exec',
+  // 2026-09-23: "새 버전으로 배포"가 아니라 "새 배포"로 만들어서 주소가 또 바뀐 경우입니다.
+  // (앱스 스크립트는 기존 배포를 "편집(연필 아이콘) → 새 버전"으로 갱신해야 주소가 그대로 유지되고,
+  // "새 배포"를 누르면 완전히 다른 /exec 주소가 새로 생깁니다.)
+  'https://script.google.com/macros/s/AKfycby4cPpIOv4szV-xQB8OaEYr4rWq2Qh84A6mhld--nTWCWDqxpNXqYsK9qdlglB7jbjm/exec'
+];
+
 function readSiteConfig_() {
   const config = Object.assign({}, SITE_CONFIG_DEFAULTS);
   try {
@@ -200,6 +218,7 @@ function readSiteConfig_() {
         const key = siteConfigKeyFromCell_(row[0]);
         const rawValue = String(row[1] || '').trim();
         if (!key || !rawValue) return;
+        if (key === 'writeApiUrl' && LEGACY_WRITE_API_URLS_.indexOf(rawValue.replace(/\/$/, '')) >= 0) return;
         config[key] = key === 'sheetId' ? (extractSheetId_(rawValue) || config.sheetId) : rawValue;
       });
     }
@@ -331,7 +350,7 @@ function doGet(e) {
     const data = { success: true, config: readSiteConfig_() };
     return jsonp_(data, callback);
   }
-  return jsonp_({ success: true, service: '기장중학교 교무 도우미', endpoint: 'doPost', permissionSheet: TEACHER_PERMISSION_SHEET_NAME, codeVersion: CODE_VERSION, features: ['sheetRead', 'sheetReadBatch', 'login', 'siteConfigSheet', 'calendarAutoSort', 'personalSchedule', 'quickLinksSave'] }, callback);
+  return jsonp_({ success: true, service: '기장중학교 교무 도우미', endpoint: 'doPost', permissionSheet: TEACHER_PERMISSION_SHEET_NAME, codeVersion: CODE_VERSION, features: ['sheetRead', 'sheetReadBatch', 'login', 'siteConfigSheet', 'calendarAutoSort', 'personalSchedule', 'quickLinksSave', 'personalCalendarPrefs'] }, callback);
 }
 
 function doPost(e) {
@@ -344,6 +363,7 @@ function doPost(e) {
     if (action === 'personalRecordDelete') return personalRecordDelete_(request);
     if (action === 'dashboardWrite') return dashboardWrite_(request);
     if (action === 'personalScheduleWrite') return personalScheduleWrite_(request);
+    if (action === 'personalCalendarPrefsSet') return personalCalendarPrefsSet_(request);
     if (action === 'quickLinksSave') return quickLinksSave_(request);
     if (action === 'dutyRotationSave') return saveDutyRotation_(request);
     if (action === 'permissionUpdate') return updateTeacherPermissions_(request);
@@ -1174,7 +1194,7 @@ function dashboardSheet_(spreadsheet, resource) {
   }
   const canonical = aliases[0];
   const sheet = spreadsheet.insertSheet(canonical);
-  const headers = resource === 'notice' ? ['안내시작일', '안내종료일', '개시 학년', '안내사항'] : ['날짜', '제목', '내용'];
+  const headers = resource === 'notice' ? ['안내시작일', '안내종료일', '개시 학년', '안내사항'] : ['날짜', '요일', '제목', '내용'];
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
   return sheet;
 }
@@ -1186,8 +1206,10 @@ function dashboardWrite_(request) {
   if (!config) throw new Error('지원하지 않는 수정 항목입니다.');
   requirePermission_(request, config.permission);
   const isCalendar = resource === 'calendar';
-  const lock = isCalendar ? LockService.getScriptLock() : null;
-  if (lock && !lock.tryLock(15 * 1000)) throw new Error('다른 학사일정 저장 작업이 진행 중입니다. 잠시 후 다시 시도하세요.');
+  // 전달사항도 학사일정과 마찬가지로 잠금을 걸어서, 여러 교사가 동시에 저장할 때
+  // 서로 덮어쓰는 것을 막습니다. (예전에는 학사일정만 잠갔습니다.)
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15 * 1000)) throw new Error('다른 저장 작업이 진행 중입니다. 잠시 후 다시 시도하세요.');
   try {
     const spreadsheet = SpreadsheetApp.openById(configuredSpreadsheetId_());
     const sheet = dashboardSheet_(spreadsheet, resource);
@@ -1198,13 +1220,20 @@ function dashboardWrite_(request) {
       const rowNumber = Number(request.rowNumber);
       if (!Number.isInteger(rowNumber) || rowNumber < 2 || rowNumber > sheet.getLastRow()) throw new Error('수정할 기존 행을 찾지 못했습니다.');
       sheet.getRange(rowNumber, 1, 1, Math.max(sheet.getLastColumn(), row.length)).clearContent();
+      // 학사일정 A열(날짜)은 항상 '일반 텍스트'로 고정한 뒤 저장합니다. 서식을 고정하지 않으면
+      // 구글 시트가 'YYYY-MM-DD' 문자열을 자동으로 진짜 날짜값으로 바꿔버릴 수 있고, 예전에
+      // 수기로 입력한 문자열 날짜와 섞이면 자동 정렬(Range.sort)이 날짜순이 아니라 타입별로
+      // 먼저 묶여서 정렬될 수 있습니다.
+      if (isCalendar) sheet.getRange(rowNumber, 1).setNumberFormat('@STRING@');
       sheet.getRange(rowNumber, 1, 1, row.length).setValues([row]);
     } else if (mode === 'delete') {
       const rowNumber = Number(request.rowNumber);
       if (!Number.isInteger(rowNumber) || rowNumber < 2 || rowNumber > sheet.getLastRow()) throw new Error('삭제할 기존 행을 찾지 못했습니다.');
       sheet.deleteRow(rowNumber);
     } else {
-      sheet.appendRow(row);
+      const rowNumber = sheet.getLastRow() + 1;
+      if (isCalendar) sheet.getRange(rowNumber, 1).setNumberFormat('@STRING@');
+      sheet.getRange(rowNumber, 1, 1, row.length).setValues([row]);
     }
     // 학사일정은 추가·수정·삭제할 때마다 항상 날짜순으로 자동 정렬해서, 시트를 직접 열어봐도
     // 항상 날짜순으로 보이게 합니다. 정렬하면 행 번호가 바뀔 수 있으므로, 화면(브라우저)이
@@ -1258,18 +1287,59 @@ function personalScheduleWrite_(request) {
       const owner = String(sheet.getRange(rowNumber, 2).getValue() || '').trim();
       if (owner !== account.loginId && !account.isMaster) throw new Error('본인이 등록한 개인 일정만 수정할 수 있습니다.');
       const input = request.row || {};
+      if (!String(input.date || '').trim()) throw new Error('날짜를 입력하세요.');
+      if (!String(input.title || '').trim() && !String(input.detail || '').trim()) throw new Error('제목이나 내용을 입력하세요.');
       const recordId = String(sheet.getRange(rowNumber, 6).getValue() || '') || String(new Date().getTime() + '-' + Math.random());
       const ownerName = String(sheet.getRange(rowNumber, 3).getValue() || account.realName);
+      sheet.getRange(rowNumber, 1).setNumberFormat('@STRING@'); // 학사일정과 같은 이유로 날짜 칸을 텍스트로 고정합니다.
       sheet.getRange(rowNumber, 1, 1, 6).setValues([[String(input.date || ''), owner, ownerName, String(input.title || ''), String(input.detail || ''), recordId]]);
     } else {
       const input = request.row || {};
       if (!String(input.date || '').trim()) throw new Error('날짜를 입력하세요.');
       if (!String(input.title || '').trim() && !String(input.detail || '').trim()) throw new Error('제목이나 내용을 입력하세요.');
       const recordId = String(new Date().getTime() + '-' + Math.random());
-      sheet.appendRow([String(input.date || ''), account.loginId, account.realName, String(input.title || ''), String(input.detail || ''), recordId]);
+      const rowNumber = sheet.getLastRow() + 1;
+      sheet.getRange(rowNumber, 1).setNumberFormat('@STRING@');
+      sheet.getRange(rowNumber, 1, 1, 6).setValues([[String(input.date || ''), account.loginId, account.realName, String(input.title || ''), String(input.detail || ''), recordId]]);
     }
     sortPersonalScheduleSheet_(sheet);
     return json_({ success: true, mode: mode, rows: readSheetRowsRaw_(spreadsheet, PERSONAL_SCHEDULE_SHEET_NAME) });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/* ---------------- 개인 달력 설정(대시보드 달력 공개 여부, 교사별 1행) ---------------- */
+const PERSONAL_CALENDAR_PREFS_SHEET_NAME = '개인 달력 설정';
+
+function personalCalendarPrefsSheet_(spreadsheet) {
+  let sheet = spreadsheet.getSheetByName(PERSONAL_CALENDAR_PREFS_SHEET_NAME);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(PERSONAL_CALENDAR_PREFS_SHEET_NAME);
+    sheet.getRange(1, 1, 1, 2).setValues([['아이디', '대시보드공개']]).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+// 이 값은 누구나 읽을 수 있어야(sheetRead/sheetReadBatch) 대시보드 달력이 "공개로 설정한
+// 교사가 누구인지"를 로그인 전에도 판단할 수 있습니다. 비밀번호 등 민감한 값이 아니라
+// 단순히 "이 아이디는 대시보드에 자기 개인 일정을 보여주기로 했다"는 켜짐/꺼짐 표시라서
+// SENSITIVE_READ_SHEETS에 넣지 않았습니다.
+function personalCalendarPrefsSet_(request) {
+  const account = accountWithPermissions_(request.loginId, request.password);
+  const showOnDashboard = !!request.showOnDashboard;
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15 * 1000)) throw new Error('다른 설정 저장 작업이 진행 중입니다. 잠시 후 다시 시도하세요.');
+  try {
+    const spreadsheet = SpreadsheetApp.openById(configuredSpreadsheetId_());
+    const sheet = personalCalendarPrefsSheet_(spreadsheet);
+    const lastRow = sheet.getLastRow();
+    const values = lastRow >= 2 ? sheet.getRange(2, 1, lastRow - 1, 1).getDisplayValues() : [];
+    const existingIndex = values.findIndex(function(row) { return String(row[0] || '').trim() === account.loginId; });
+    const rowNumber = existingIndex >= 0 ? existingIndex + 2 : sheet.getLastRow() + 1;
+    sheet.getRange(rowNumber, 1, 1, 2).setValues([[account.loginId, showOnDashboard ? 'Y' : '']]);
+    return json_({ success: true, showOnDashboard: showOnDashboard });
   } finally {
     lock.releaseLock();
   }
